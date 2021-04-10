@@ -6,4 +6,8 @@
     <RootNamespace>TFT_Engine</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Characters\" />
+  </ItemGroup>
+
 </Project>

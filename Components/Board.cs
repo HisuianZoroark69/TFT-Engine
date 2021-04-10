@@ -7,12 +7,17 @@ using System.Timers;
 
 namespace TFT_Engine.Components
 {
+    class HexagonMap
+    {
+
+    }
     class Board
     {
         /// <summary>
-        /// Turn end flag
+        /// Board dimensions
         /// </summary>
-        bool endTurn;
+        int width;
+        int height;
 
         /// <summary>
         /// The timer of the board
@@ -60,7 +65,9 @@ namespace TFT_Engine.Components
         /// List of cells in the board
         /// </summary>
         //List<Cell> Cells = new();
-        public Dictionary<(int, int), Cell> Cells = new();
+        public List<Character> Characters = new();
+        public List<Character> currentCharacters;
+        public Dictionary<Guid, int> charCounter;
 
         /// <summary>
         /// Initialize a new board
@@ -70,80 +77,61 @@ namespace TFT_Engine.Components
         /// <param name="width">The width of the board</param>
         public Board(BoardType type, int width, int height)
         {
-            /*Shape = type;
-            timer.Elapsed += (object o,ElapsedEventArgs e) => { TickEvent?.Invoke(); };
-
-            if(type == BoardType.RECTANGLE)
-            {
-                for(int x = 0;x < width; x++)
-                {
-                    for(int y = 0; y < height; y++)
-                    {
-                        Cells.Add((x, y), new Cell(x, y));
-                    }
-                }
-                foreach(Cell cell in Cells.Values)
-                {
-                    TickEvent += cell.OnTick;
-                    StartEvent += cell.OnStart;
-                    cell.neighbor = new();
-                    for(int i = 0; i < 8; i++)
-                    {
-                        try {
-                            //cell.neighbor.Add(Cells.Find(c => c.x == cell.x - RectangleNeighbor[i, 0] && c.y == cell.y - RectangleNeighbor[i, 1]));
-                            cell.neighbor.Add(Cells[(cell.x - RectangleNeighbor[i, 0], cell.y - RectangleNeighbor[i, 1])]);
-                        }
-                        catch (IndexOutOfRangeException) { }
-                    }
-                }
-            }
-            if(type == BoardType.HEXAGON)
-            {
-                for(int q = 0; q < width; q++)
-                {
-                    for(int r = 0 - (int)Math.Floor((decimal)q/2); r < height - Math.Floor((decimal)q / 2); r++)
-                    {
-                        Cells.Add((q, r), new Cell(q, r));
-                    }
-                }
-                foreach (Cell cell in Cells.Values)
-                {
-                    TickEvent += cell.OnTick;
-                    StartEvent += cell.OnStart;
-                    cell.neighbor = new();
-                    for (int i = 0; i < 6; i++)
-                    {
-                        try
-                        {
-                            //cell.neighbor.Add(Cells.Find(c => c.x == cell.x - HexagonNeighbor[i, 0] && c.y == cell.y - HexagonNeighbor[i, 1]));
-                            cell.neighbor.Add(Cells[(cell.x - HeNeighbor[i, 0], cell.y - RectangleNeighbor[i, 1])]);
-                        }
-                        catch (KeyNotFoundException) { }
-                    }
-                }
-            }
-            foreach(Cell c in Cells.Values)
-            {
-                TickEvent += c.Character.OnTick;
-            }*/
+            timer.Elapsed += (object o, ElapsedEventArgs e) => TickEvent?.Invoke();
+            this.width = width;
+            this.height = height;
+            Shape = type;
         }
+
         /// <summary>
         /// Start the turn
         /// </summary>
-        public async void Start(float tickPerSec = 100)
+        public void Start(float tickPerSec = 200)
         {
-            
+            currentCharacters = new(Characters);
+            charCounter = new();
+            foreach (Character c in Characters) {
+                try { charCounter[c.teamID]++; }
+                catch (KeyNotFoundException) { charCounter.Add(c.teamID, 0); charCounter[c.teamID]++; }                
+            }
             TicksPerSecond = tickPerSec; //Set default ticks
             timer.Start();
             StartEvent?.Invoke();
-            endTurn = true;
-            await Task.Run(() => { while (endTurn){} });
+            while (!charCounter.Values.Contains(0)) { }
+            //await Task.Run(() => { while (!charCounter.Values.Contains(0)){} });
             timer.Stop();
+
         }
 
-        public void End()
+        public void AddCharacter(Position pos, Character character)
         {
-            endTurn = !endTurn;
+            if ((from x in Characters where x.position.x == pos.x && x.position.y == pos.y select x.position).Count() == 0)
+            {
+                character.board = this;
+                character.position = pos;
+                Characters.Add(character);
+                TickEvent += character.OnTick;
+                StartEvent += character.OnStart;
+            }
+            else
+            {
+                Console.WriteLine("There's already a character in this cell.");
+            }
+        }
+
+        public int Distance(Position pos1, Position pos2)
+        {
+            if (Shape == BoardType.HEXAGON)
+            {
+                int pos1z = 0 - pos1.x - pos1.y;
+                int pos2z = 0 - pos2.x - pos2.y;
+                return Math.Max(Math.Abs(pos1.x - pos2.x), Math.Max(Math.Abs(pos1.y - pos2.y), Math.Abs(pos1z - pos2z)));
+            }
+            else if (Shape == BoardType.RECTANGLE)
+            {
+                return Math.Abs(pos1.x - pos2.x) + Math.Abs(pos1.y - pos2.y);
+            }
+            else return 0;
         }
     }
 }

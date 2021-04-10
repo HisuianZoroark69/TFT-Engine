@@ -6,51 +6,56 @@ using System.Threading.Tasks;
 
 namespace TFT_Engine.Components
 {
-    class Position
+    class Character
     {
-        public int x { get; set; }
-        public int y { get; set; }
-        public Position(int x = 0, int y = 0)
-        {
-            this.x = x;
-            this.y = y;
-        }
-    }
-    abstract class Character
-    {
-        //Todo: Position
-        Position Position;
         //Todo: Time attack and move according to ticks
-        /// <summary>
-        /// The number of ticks per attack
-        /// </summary>
-        protected int baseAttackSpeed;
-        protected int currentAttackSpeed;
+        public Position position;
         byte attackCounter;
-
+        public string Name;
+        public Guid teamID;
+        public Board board;
         Character AttackTarget;
-        public Character(Position Pos)
+        Statistics baseStats;
+        public Statistics currentStats;
+        bool Dead;
+
+        public Character(string name, Guid teamId, Statistics baseStats)
         {
-            Position = Pos;
-        }
-        public Character()
-        {
-            Position = new(0, 0);
+            Name = name;
+            teamID = teamId;
+            this.baseStats = baseStats;
         }
         public virtual void OnTick()
         {
-            if(++attackCounter >= currentAttackSpeed && currentAttackSpeed > 0)
+            if (!Dead)
             {
-                Attack();
-                attackCounter = 0;
+                //Finding target
+                if (AttackTarget == null)
+                {
+                    int minDistance = int.MaxValue;
+                    foreach (Character c in board.Characters)
+                    {
+                        if (!c.Dead && c.teamID != teamID && board.Distance(c.position, position) < minDistance)
+                        {
+                            AttackTarget = c;
+                        }
+                    }
+                }
+                if (++attackCounter >= currentStats.attackSpeed && currentStats.attackSpeed > 0)
+                {
+                    Attack();
+                    attackCounter = 0;
+                }
             }
         }
         public virtual void OnStart()
         {
+            Dead = false;
             attackCounter = 0;
+            currentStats = baseStats;          
         }
 
-        public virtual void Move(Cell cell)
+        public virtual void Move()
         {
 
         }
@@ -59,7 +64,18 @@ namespace TFT_Engine.Components
         //Todo: add some stats then atk
         public virtual void Attack()
         {
-
+            
+            AttackTarget.OnHit(this);
+        }
+        public virtual void OnHit(Character attacker) 
+        {
+            currentStats.hp -= Math.Max(attacker.currentStats.atk - currentStats.def, 1);
+            if(currentStats.hp <= 0)
+            {
+                attacker.AttackTarget = null;
+                Dead = true;
+                board.charCounter[teamID]--;
+            }
         }
 
         //Todo: add mana and special moves
