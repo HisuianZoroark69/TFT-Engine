@@ -15,5 +15,17 @@ namespace TFT_Engine.Components
             this.x = x;
             this.y = y;
         }
+        public override int GetHashCode()
+        {
+            return int.Parse(x.ToString() + y.ToString());
+        }
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as Position);
+        }
+        public bool Equals(Position pos)
+        {
+            return pos.x == x && pos.y == y;
+        }
     }
 }

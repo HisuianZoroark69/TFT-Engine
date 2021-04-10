@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -105,7 +106,7 @@ namespace TFT_Engine.Components
 
         public void AddCharacter(Position pos, Character character)
         {
-            if ((from x in Characters where x.position.x == pos.x && x.position.y == pos.y select x.position).Count() == 0)
+            if ((from x in Characters where x.position.Equals(pos) select x.position).Count() == 0)
             {
                 character.board = this;
                 character.position = pos;
@@ -132,6 +133,54 @@ namespace TFT_Engine.Components
                 return Math.Abs(pos1.x - pos2.x) + Math.Abs(pos1.y - pos2.y);
             }
             else return 0;
+        }
+        public List<Position> PathFinding(Position start, Position end)
+        {
+            Dictionary<Position, Position> cameFrom = new();
+            Dictionary<Position, int> costSoFar = new();
+            List<(int, Position)> frontier = new();
+            frontier.Add((0, start));
+            cameFrom.Add(start, start);
+            costSoFar.Add(start, 0);
+            while(frontier.Count > 0)
+            {
+                Position current = frontier.ElementAt(0).Item2;
+                frontier.Remove(frontier.ElementAt(0));
+
+                if (current.Equals(end))
+                {
+                    List<Position> ret = new();
+                    //Make sure character dont step on each other
+                    Position dummy = cameFrom[end];
+                    while(dummy != start)
+                    {
+                        ret.Add(dummy);
+                        dummy = cameFrom[dummy];
+                    }
+                    ret.Reverse();
+                    return ret;
+                }
+                int[,] Neighbor;
+                if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
+                else Neighbor = RectangleNeighbor;
+
+                for(int i = 0; i < 6; i++)
+                {
+                    var next = new Position(current.x + Neighbor[i, 0], current.y + Neighbor[i, 1]);
+                    if ((from x in Characters where next.Equals(x.position) select x.position).Any())
+                        continue;
+                    int newCost = costSoFar[current] + 1;
+                    if(!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                    {
+                        costSoFar[next] = newCost;
+                        int priority = newCost + Distance(next, end);
+                        frontier.Add((priority, next));
+                        cameFrom[next] = current;
+                    }
+                }
+                frontier = (from x in frontier orderby x.Item1 ascending select x).ToList();
+            }
+            return new();
         }
     }
 }
