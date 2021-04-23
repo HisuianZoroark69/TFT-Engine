@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Quartz;
+using Quartz.Impl;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
@@ -33,7 +35,7 @@ namespace TFT_Engine.Components
             get { return _TicksPerSecond; }
             set {
                 _TicksPerSecond = value;
-                timer.Interval = 1000 / value;
+                timer.Interval = 1000/value; //min 10
             }
         }
 
@@ -87,7 +89,7 @@ namespace TFT_Engine.Components
         /// <summary>
         /// Start the turn
         /// </summary>
-        public void Start(float tickPerSec = 200)
+        public void Start(float tickPerSec = 20)
         {
             currentCharacters = new(Characters);
             charCounter = new();
@@ -139,6 +141,9 @@ namespace TFT_Engine.Components
             Dictionary<Position, Position> cameFrom = new();
             Dictionary<Position, int> costSoFar = new();
             List<(int, Position)> frontier = new();
+            int[,] Neighbor;
+            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
+            else Neighbor = RectangleNeighbor;
             frontier.Add((0, start));
             cameFrom.Add(start, start);
             costSoFar.Add(start, 0);
@@ -150,25 +155,36 @@ namespace TFT_Engine.Components
                 if (current.Equals(end))
                 {
                     List<Position> ret = new();
+                    ret.Add(end);
                     //Make sure character dont step on each other
                     Position dummy = cameFrom[end];
+                    //Position dummy = end;
                     while(dummy != start)
                     {
                         ret.Add(dummy);
                         dummy = cameFrom[dummy];
                     }
+                    ret.Add(start);
                     ret.Reverse();
                     return ret;
                 }
-                int[,] Neighbor;
-                if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
-                else Neighbor = RectangleNeighbor;
+                
 
-                for(int i = 0; i < 6; i++)
+                for(int i = 0; i < Neighbor.Length/2; i++)
                 {
                     var next = new Position(current.x + Neighbor[i, 0], current.y + Neighbor[i, 1]);
-                    if ((from x in Characters where next.Equals(x.position) select x.position).Any())
+                    //Todo: Error here
+                    var t = (from x in Characters where next.Equals(x.position) select x.position);
+                    if (t.Any())
+                    {
+                        if (t.Contains(end))
+                        {
+                            frontier.Add((0, end));
+                            cameFrom[end] = current;
+                            break;
+                        }
                         continue;
+                    }
                     int newCost = costSoFar[current] + 1;
                     if(!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
                     {

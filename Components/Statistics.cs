@@ -11,6 +11,7 @@ namespace TFT_Engine.Components
         public int hp;
         public int atk;
         public int def;
-        public int attackSpeed;
+        public double attackSpeed;
+        public int attackRange;
     }
 }
