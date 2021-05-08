@@ -1,26 +1,26 @@
-﻿using Quartz;
-using Quartz.Impl;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
 
 namespace TFT_Engine.Components
 {
-    class HexagonMap
+    public class CharList : List<Character> 
     {
-
+        public Character this[Character c]
+        {
+            get => Find(x => x == c);
+        }
     }
-    class Board
+    public class Board
     {
         /// <summary>
         /// Board dimensions
         /// </summary>
-        int width;
-        int height;
+        readonly int width;
+        readonly int height;
+        readonly bool border;
 
         /// <summary>
         /// The timer of the board
@@ -35,15 +35,25 @@ namespace TFT_Engine.Components
             get { return _TicksPerSecond; }
             set {
                 _TicksPerSecond = value;
-                timer.Interval = 1000/value; //min 10
+                try
+                {
+                    timer.Interval = 1000 / value; //min 10
+                    //timer.Enabled = true;
+                }
+                catch (Exception) {
+                    //timer.Enabled = false;
+                };
             }
         }
-
+        public float defaultTicksPerSec = 20;
         /// <summary>
         /// Trigger once on Start()
         /// </summary>
         public delegate void StartEventHandler();
         public event StartEventHandler StartEvent;
+
+        public delegate void CharacterStartDelegate();
+        public CharacterStartDelegate CharacterStart;
 
         /// <summary>
         /// Trigger every tick
@@ -51,13 +61,15 @@ namespace TFT_Engine.Components
         public delegate void TickEventHandler();
         public event TickEventHandler TickEvent;
 
+        public delegate void EndEventHandler();
+        public event EndEventHandler EndEvent;
+
         /// <summary>
         /// Specify the type of board
         /// </summary>
         public enum BoardType { RECTANGLE, HEXAGON };
         BoardType Shape;
 
-        //public enum BoardDirections { FORWARD_LEFT, FORWARD, FORWARD_RIGHT, RIGHT, BACKWARD_RIGHT, BACKWARD, BACKWARD_LEFT, LEFT };
         /// <summary>
         /// Neighbor coordination
         /// </summary>
@@ -67,10 +79,11 @@ namespace TFT_Engine.Components
         /// <summary>
         /// List of cells in the board
         /// </summary>
-        //List<Cell> Cells = new();
-        public List<Character> Characters = new();
+        public CharList Characters = new();
         public List<Character> currentCharacters;
         public Dictionary<Guid, int> charCounter;
+
+        public List<Set> sets;
 
         /// <summary>
         /// Initialize a new board
@@ -78,18 +91,36 @@ namespace TFT_Engine.Components
         /// <param name="type">The shape of the board</param>
         /// <param name="height">The height of the board</param>
         /// <param name="width">The width of the board</param>
-        public Board(BoardType type, int width, int height)
+        public Board(BoardType type, int width, int height, bool border = true, params Set[] s)
         {
             timer.Elapsed += (object o, ElapsedEventArgs e) => TickEvent?.Invoke();
             this.width = width;
             this.height = height;
             Shape = type;
+            this.border = border;
+            sets = new(s);
+            foreach(Set set in sets)
+            {
+                StartEvent += set.OnStart;
+                TickEvent += set.OnTick;
+                EndEvent += set.OnEnd;                
+            }
         }
 
+
+
+        public Character GetCharacter(Position p)
+        {
+            return Characters.FirstOrDefault(x => x.position == p);
+        }
+        public Character GetCharacter(Character c)
+        {
+            return Characters.FirstOrDefault(x => x == c);
+        }
         /// <summary>
         /// Start the turn
         /// </summary>
-        public void Start(float tickPerSec = 20)
+        public Guid Start(float tickPerSec = 20)
         {
             currentCharacters = new(Characters);
             charCounter = new();
@@ -97,31 +128,58 @@ namespace TFT_Engine.Components
                 try { charCounter[c.teamID]++; }
                 catch (KeyNotFoundException) { charCounter.Add(c.teamID, 0); charCounter[c.teamID]++; }                
             }
+
+            foreach (Set s in sets)
+            {
+                //Reset type counter
+                s.characterWithType.Clear();
+
+                //Add character to set
+                s.characterWithType = (from x in Characters 
+                                       group x by x.teamID).ToDictionary(g => g.Key, g=>g.ToList());
+            }
+
+            if (charCounter.Keys.Count < 2) return charCounter.Keys.ToArray()[0];
             TicksPerSecond = tickPerSec; //Set default ticks
-            timer.Start();
+            //if(tickPerSec != 0) timer.Start();
+            CharacterStart?.Invoke();
             StartEvent?.Invoke();
-            while (!charCounter.Values.Contains(0)) { }
+            while ((from x in charCounter where x.Value == 0 select x).Count() < charCounter.Keys.Count - 1)
+            {
+                TickEvent?.Invoke();
+                System.Threading.Thread.Sleep((int)(TicksPerSecond > 0 ? 1000/TicksPerSecond : 0));
+            }
             //await Task.Run(() => { while (!charCounter.Values.Contains(0)){} });
             timer.Stop();
-
+            EndEvent.Invoke();
+            return (from x in charCounter where x.Value != 0 select x.Key).ToList()[0];
         }
-
         public void AddCharacter(Position pos, Character character)
         {
-            if ((from x in Characters where x.position.Equals(pos) select x.position).Count() == 0)
+            if((pos.x - pos.y < 0 || pos.x > width - 1 || -pos.z < 0 || -pos.z > height - 1) && border)
+            {
+                Console.WriteLine("Position out of boundary");
+                return;
+            }
+            if (!(from x in Characters where x.position == pos select x).Any())
             {
                 character.board = this;
                 character.position = pos;
                 Characters.Add(character);
                 TickEvent += character.OnTick;
-                StartEvent += character.OnStart;
+                CharacterStart += character.OnStart;
             }
             else
             {
-                Console.WriteLine("There's already a character in this cell.");
+                Characters.Remove(Characters.Single(c => c.position == pos));
             }
         }
-
+        public void RemoveCharacter(Character character)
+        {
+            Characters.Remove(character);
+            TickEvent -= character.OnTick;
+            CharacterStart -= character.OnStart;
+        }
         public int Distance(Position pos1, Position pos2)
         {
             if (Shape == BoardType.HEXAGON)
@@ -172,9 +230,8 @@ namespace TFT_Engine.Components
 
                 for(int i = 0; i < Neighbor.Length/2; i++)
                 {
-                    var next = new Position(current.x + Neighbor[i, 0], current.y + Neighbor[i, 1]);
-                    //Todo: Error here
-                    var t = (from x in Characters where next.Equals(x.position) select x.position);
+                    var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                    var t = from x in Characters where next == x.position select x.position;
                     if (t.Any())
                     {
                         if (t.Contains(end))
@@ -185,6 +242,17 @@ namespace TFT_Engine.Components
                         }
                         continue;
                     }
+                    if (border)
+                        if(Shape == BoardType.RECTANGLE)
+                        {
+                            if (next.x > width - 1 || next.x < 0 || next.y < 0 || next.y > height - 1)
+                                continue;
+                        }
+                        else if(Shape == BoardType.HEXAGON)
+                        {
+                            if (next.x - next.y < 0 || next.x > width - 1 || -next.z < 0 || -next.z > height - 1)
+                                continue;
+                        }
                     int newCost = costSoFar[current] + 1;
                     if(!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
                     {

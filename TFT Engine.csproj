@@ -1,14 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>TFT_Engine</RootNamespace>
+    <ApplicationIcon />
+    <StartupObject />
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="Characters\" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Quartz" Version="3.3.2" />
