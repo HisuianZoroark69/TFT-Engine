@@ -12,6 +12,16 @@ namespace TFT_Engine.Components
         {
             get => Find(x => x == c);
         }
+        public Character this[Position p,bool collision = true]
+        {
+            get => Find(x => x.position == p && (collision == x.collision));
+        }
+        public CharList this[Guid teamId]
+        {
+            get => FindAll(x => x.teamID == teamId) as CharList;
+        }
+        public CharList(CharList cl) : base(cl) { }
+        public CharList() : base() { }
     }
     public class Board
     {
@@ -45,7 +55,7 @@ namespace TFT_Engine.Components
                 };
             }
         }
-        public float defaultTicksPerSec = 20;
+        public int defaultTicksPerSec = 20;
         /// <summary>
         /// Trigger once on Start()
         /// </summary>
@@ -79,11 +89,12 @@ namespace TFT_Engine.Components
         /// <summary>
         /// List of cells in the board
         /// </summary>
-        public CharList Characters = new();
-        public List<Character> currentCharacters;
+        public CharList BaseCharacters = new();
+        public CharList Characters;
         public Dictionary<Guid, int> charCounter;
 
         public List<Set> sets;
+        public List<Position> positionList;
 
         /// <summary>
         /// Initialize a new board
@@ -103,8 +114,10 @@ namespace TFT_Engine.Components
             {
                 StartEvent += set.OnStart;
                 TickEvent += set.OnTick;
-                EndEvent += set.OnEnd;                
+                EndEvent += set.OnEnd;
+                set.board = this;
             }
+            positionList = getPositionList().ToList();
         }
 
 
@@ -122,7 +135,7 @@ namespace TFT_Engine.Components
         /// </summary>
         public Guid Start(float tickPerSec = 20)
         {
-            currentCharacters = new(Characters);
+            Characters = new(BaseCharacters);
             charCounter = new();
             foreach (Character c in Characters) {
                 try { charCounter[c.teamID]++; }
@@ -161,22 +174,22 @@ namespace TFT_Engine.Components
                 Console.WriteLine("Position out of boundary");
                 return;
             }
-            if (!(from x in Characters where x.position == pos select x).Any())
+            if (!(from x in BaseCharacters where x.basePosition == pos select x).Any())
             {
                 character.board = this;
-                character.position = pos;
-                Characters.Add(character);
+                character.basePosition = pos;
+                BaseCharacters.Add(character);
                 TickEvent += character.OnTick;
-                CharacterStart += character.OnStart;
+                CharacterStart += character.OnStart;               
             }
             else
             {
-                Characters.Remove(Characters.Single(c => c.position == pos));
+                BaseCharacters.Remove(BaseCharacters.Single(c => c.position == pos));
             }
         }
         public void RemoveCharacter(Character character)
         {
-            Characters.Remove(character);
+            BaseCharacters.Remove(character);
             TickEvent -= character.OnTick;
             CharacterStart -= character.OnStart;
         }
@@ -226,12 +239,11 @@ namespace TFT_Engine.Components
                     ret.Reverse();
                     return ret;
                 }
-                
 
-                for(int i = 0; i < Neighbor.Length/2; i++)
+                for(int i = 0; i < Neighbor.Length / 2;i++)
                 {
                     var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
-                    var t = from x in Characters where next == x.position select x.position;
+                    var t = from x in Characters where next == x.position && x.collision select x.position;
                     if (t.Any())
                     {
                         if (t.Contains(end))
@@ -265,6 +277,101 @@ namespace TFT_Engine.Components
                 frontier = (from x in frontier orderby x.Item1 ascending select x).ToList();
             }
             return new();
+        }
+        public List<Character> GetAdjacentCharacter(Character c)
+        {
+            int[,] Neighbor;
+            Position current = c.position;
+            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
+            else Neighbor = RectangleNeighbor;
+            List<Character> ret = new();
+            for (int i = 0; i < Neighbor.Length / 2; i++)
+            {
+                var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                ret.AddRange(from x in Characters where next == x.position select x);
+            }
+            return ret;
+        }
+        public List<Character> GetAdjacentCharacter(Position current)
+        {
+            int[,] Neighbor;
+            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
+            else Neighbor = RectangleNeighbor;
+            List<Character> ret = new();
+            for (int i = 0; i < Neighbor.Length / 2; i++)
+            {
+                var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                ret.Add(Characters[next]);
+            }
+            return ret;
+        }
+        public List<Position> GetAdjacentPositions(Position current)
+        {
+            int[,] Neighbor;
+            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
+            else Neighbor = RectangleNeighbor;
+            List<Position> ret = new();
+            for (int i = 0; i < Neighbor.Length / 2; i++)
+            {
+                var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                ret.Add(next);
+            }
+            return ret;
+        }
+        public List<Position> DrawLine(Position start, Position end)
+        {
+            List<Position> ret = new();
+            int N = Distance(start, end);
+            for(int step = 0; step <= N; step++)
+            {
+                var t = N == 0 ? 0f : step / N;
+                ret.Add(LerpPoint(start,end,t));
+            }
+            return ret;
+        }
+        Position LerpPoint(Position p1, Position p2,float t)
+        {
+            return new Position { x = Lerp(p1.x, p2.x, t), 
+                                  y = Lerp(p1.y, p2.y, t) };
+        }
+        int Lerp(int a, int b, float t)
+        {
+            return (int)Math.Round(a + t * (b - a));
+        }
+        IEnumerable<Position> getPositionList()
+        {
+            if(Shape == BoardType.RECTANGLE)
+            {
+                for(int x = 0; x < width; x++)
+                {
+                    for(int y = 0; y < height; y++)
+                    {
+                        yield return new Position { x = x, y = y };
+                    }
+                }
+            }
+            else if(Shape == BoardType.HEXAGON)
+            {
+                for(int z = 0; -z < height; z--)
+                {
+                    for(int x = (int)Math.Round(-z/2f,MidpointRounding.AwayFromZero); x < width; x++)
+                    {
+                        yield return new Position { x = x, z = z };
+                    }
+                }
+            }
+        }
+        public List<Position> GetRange(Position current, int radius)
+        {
+            List<Position> ret = new();
+            for(int x = -radius;x <= radius; x++)
+            {
+                for(int y = Math.Max(-radius,-x-radius); y <= Math.Min(radius,-x+radius); y++)
+                {
+                    ret.Add(new Position { x = x, y = y});
+                }
+            }
+            return ret;
         }
     }
 }

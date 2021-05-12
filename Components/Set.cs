@@ -12,6 +12,7 @@ namespace TFT_Engine.Components
         public virtual void OnStart() { }
         public virtual void OnTick() { }
         public virtual void OnEnd() { }
+        //public virtual void OnSpecialMove() { }
 
     }
 }
