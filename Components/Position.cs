@@ -4,9 +4,9 @@ namespace TFT_Engine.Components
 {
     public class Position
     {
-        public int x;
-        public int y;
-        public int z { get { return 0 - x - y; } set { y = 0 - value - x; } }
+        public double x;
+        public double y;
+        public double z { get { return 0 - x - y; } set { y = 0 - value - x; } }
         public Position(Position p)
         {
             x = p.x;
@@ -14,6 +14,12 @@ namespace TFT_Engine.Components
         }
         public Position()
         {
+        }
+
+        public void Round()
+        {
+            x = Math.Round(x);
+            y = Math.Round(y);
         }
         public override int GetHashCode()
         {
@@ -32,9 +38,28 @@ namespace TFT_Engine.Components
         {
             return !p1.Equals(p2);
         }
+
         public bool Equals(Position pos)
         {
             return pos.x == x && pos.y == y;
+        }
+
+        public static Position operator +(Position p1, Position p2)
+        {
+            return new()
+            {
+                x = p1.x + p2.x,
+                y = p1.y + p2.y
+            };
+        }
+
+        public static Position operator -(Position p1, Position p2)
+        {
+            return new()
+            {
+                x = p1.x - p2.x,
+                y = p1.y - p2.y
+            };
         }
     }
 }

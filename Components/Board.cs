@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.Linq;
 using System.Timers;
 
@@ -31,6 +32,9 @@ namespace TFT_Engine.Components
         readonly int width;
         readonly int height;
         readonly bool border;
+
+        public int CurrentTick;
+        public Dictionary<int, List<RoundEvent>> roundLog;
 
         /// <summary>
         /// The timer of the board
@@ -109,7 +113,7 @@ namespace TFT_Engine.Components
             this.height = height;
             Shape = type;
             this.border = border;
-            sets = new(s);
+            sets = new List<Set>(s);
             foreach(Set set in sets)
             {
                 StartEvent += set.OnStart;
@@ -135,8 +139,8 @@ namespace TFT_Engine.Components
         /// </summary>
         public Guid Start(float tickPerSec = 20)
         {
-            Characters = new(BaseCharacters);
-            charCounter = new();
+            Characters = new CharList(BaseCharacters);
+            charCounter = new Dictionary<Guid, int>();
             foreach (Character c in Characters) {
                 try { charCounter[c.teamID]++; }
                 catch (KeyNotFoundException) { charCounter.Add(c.teamID, 0); charCounter[c.teamID]++; }                
@@ -148,17 +152,19 @@ namespace TFT_Engine.Components
                 s.characterWithType.Clear();
 
                 //Add character to set
-                s.characterWithType = (from x in Characters 
+                s.characterWithType = (from x in Characters where x.set.Contains(s)
                                        group x by x.teamID).ToDictionary(g => g.Key, g=>g.ToList());
             }
 
             if (charCounter.Keys.Count < 2) return charCounter.Keys.ToArray()[0];
             TicksPerSecond = tickPerSec; //Set default ticks
-            //if(tickPerSec != 0) timer.Start();
+            CurrentTick = 0;
+            roundLog = new();
             CharacterStart?.Invoke();
             StartEvent?.Invoke();
             while ((from x in charCounter where x.Value == 0 select x).Count() < charCounter.Keys.Count - 1)
             {
+                CurrentTick++;
                 TickEvent?.Invoke();
                 System.Threading.Thread.Sleep((int)(TicksPerSecond > 0 ? 1000/TicksPerSecond : 0));
             }
@@ -167,11 +173,25 @@ namespace TFT_Engine.Components
             EndEvent.Invoke();
             return (from x in charCounter where x.Value != 0 select x.Key).ToList()[0];
         }
+
+        public bool CheckBoundary(Position pos)
+        {
+            if (Shape == BoardType.HEXAGON && (pos.x > width - 1 - pos.z || pos.x < -pos.z / 2 || pos.z > 0 || pos.z < -height + 1))
+            {
+                return true;
+            }
+            if (Shape == BoardType.RECTANGLE && (pos.x < 0 || pos.x > width - 1 || pos.y < 0 || pos.y > height - 1))
+            {
+                return true;
+            }
+
+            return false;
+        }
         public void AddCharacter(Position pos, Character character)
         {
-            if((pos.x - pos.y < 0 || pos.x > width - 1 || -pos.z < 0 || -pos.z > height - 1) && border)
+            if(border && CheckBoundary(pos))
             {
-                Console.WriteLine("Position out of boundary");
+                Console.WriteLine("There's already a character on this tile");
                 return;
             }
             if (!(from x in BaseCharacters where x.basePosition == pos select x).Any())
@@ -197,15 +217,13 @@ namespace TFT_Engine.Components
         {
             if (Shape == BoardType.HEXAGON)
             {
-                int pos1z = 0 - pos1.x - pos1.y;
-                int pos2z = 0 - pos2.x - pos2.y;
-                return Math.Max(Math.Abs(pos1.x - pos2.x), Math.Max(Math.Abs(pos1.y - pos2.y), Math.Abs(pos1z - pos2z)));
+                return (int)Math.Max(Math.Abs (pos1.x - pos2.x), Math.Max(Math.Abs(pos1.y - pos2.y), Math.Abs(pos1.z - pos2.z)));
             }
-            else if (Shape == BoardType.RECTANGLE)
+            if (Shape == BoardType.RECTANGLE)
             {
-                return Math.Abs(pos1.x - pos2.x) + Math.Abs(pos1.y - pos2.y);
+                return (int)(Math.Abs(pos1.x - pos2.x) + Math.Abs(pos1.y - pos2.y));
             }
-            else return 0;
+            return 0;
         }
         public List<Position> PathFinding(Position start, Position end)
         {
@@ -240,9 +258,10 @@ namespace TFT_Engine.Components
                     return ret;
                 }
 
-                for(int i = 0; i < Neighbor.Length / 2;i++)
+                //for(int i = 0; i < Neighbor.Length / 2;i++)
+                foreach (var next in GetAdjacentPositions(current)) 
                 {
-                    var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                    //var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
                     var t = from x in Characters where next == x.position && x.collision select x.position;
                     if (t.Any())
                     {
@@ -254,7 +273,7 @@ namespace TFT_Engine.Components
                         }
                         continue;
                     }
-                    if (border)
+                    /*if (border)
                         if(Shape == BoardType.RECTANGLE)
                         {
                             if (next.x > width - 1 || next.x < 0 || next.y < 0 || next.y > height - 1)
@@ -264,7 +283,7 @@ namespace TFT_Engine.Components
                         {
                             if (next.x - next.y < 0 || next.x > width - 1 || -next.z < 0 || -next.z > height - 1)
                                 continue;
-                        }
+                        }*/
                     int newCost = costSoFar[current] + 1;
                     if(!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
                     {
@@ -276,7 +295,7 @@ namespace TFT_Engine.Components
                 }
                 frontier = (from x in frontier orderby x.Item1 ascending select x).ToList();
             }
-            return new();
+            return new List<Position>();
         }
         public List<Character> GetAdjacentCharacter(Character c)
         {
@@ -287,7 +306,7 @@ namespace TFT_Engine.Components
             List<Character> ret = new();
             for (int i = 0; i < Neighbor.Length / 2; i++)
             {
-                var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };                
                 ret.AddRange(from x in Characters where next == x.position select x);
             }
             return ret;
@@ -314,29 +333,129 @@ namespace TFT_Engine.Components
             for (int i = 0; i < Neighbor.Length / 2; i++)
             {
                 var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
+                if (border)
+                    if (Shape == BoardType.HEXAGON && (next.x > width - 1 - Math.Round(next.z/2f,MidpointRounding.AwayFromZero) || next.x < -next.z / 2 || next.z > 0 || next.z < -height + 1))
+                    {
+                        continue;
+                    }
+                    else if (Shape == BoardType.RECTANGLE && (next.x < 0 || next.x > width - 1 || next.y < 0 || next.y > height - 1))
+                    {
+                        continue;
+                    }
                 ret.Add(next);
             }
             return ret;
         }
-        public List<Position> DrawLine(Position start, Position end)
+        public List<Position> DrawLine(Position start, Position end, out Dictionary<Position, Position> affectedPositions)
         {
-            List<Position> ret = new();
-            int N = Distance(start, end);
-            for(int step = 0; step <= N; step++)
+            HashSet<Position> ret = new();
+            float N = Distance(start, end);
+            start = start + new Position {x = 1e-6, y = 1e-6, z = 1e-6};
+            end = end + new Position { x = 1e-6, y = 1e-6, z = 1e-6 };
+            Position temp1;
+            for (int step = 0; step <= N; step++)
             {
                 var t = N == 0 ? 0f : step / N;
-                ret.Add(LerpPoint(start,end,t));
+                temp1 = new() {x = 0, z = 0};
+                temp1 = LerpPoint(start, end, t);
+                temp1.Round();
+                ret.Add(temp1);
+            }
+            affectedPositions = ExtraAffectedLine(start, end);
+            return ret.ToList();
+        }
+        public List<Position> DrawLine(Position start, Position end, bool extraAffectedPos = false)
+        {
+            HashSet<Position> ret = new();
+            float N = Distance(start, end);
+            start = start + new Position { x = 1e-6, y = 1e-6, z = 1e-6 };
+            end = end + new Position { x = 1e-6, y = 1e-6, z = 1e-6 };
+            for (int step = 0; step <= N; step++)
+            {
+                var t = N == 0 ? 0f : step / N;
+                Position temp1 = new() { x = 0, z = 0 };
+                temp1 = LerpPoint(start, end, t);
+                temp1.Round();
+                ret.Add(temp1);
+            }
+            if (extraAffectedPos) ExtraAffectedLine(start, end).Values.ToList().ForEach(x => ret.Add(x));
+            return ret.ToList();
+        }
+        Dictionary<Position, Position> ExtraAffectedLine(Position start, Position end)
+        {
+            List<Position> baseLine = DrawLine(start, end);
+            Dictionary<Position, Position> ret = new();
+            float N = Distance(start, end);
+            start -= new Position { x = 1e-6, y = 1e-6, z = 1e-6 };
+            end -= new Position { x = 1e-6, y = 1e-6, z = 1e-6 };
+            for (int step = 0; step <= N; step++)
+            {
+                var t = N == 0 ? 0f : step / N;
+                Position temp1;
+                temp1 = LerpPoint(start, end, t);
+                temp1.Round();
+                if(temp1 != baseLine[step]) ret.Add(baseLine[step],temp1);
             }
             return ret;
         }
-        Position LerpPoint(Position p1, Position p2,float t)
+        Position LerpPoint(Position p1, Position p2,double t)
         {
-            return new Position { x = Lerp(p1.x, p2.x, t), 
-                                  y = Lerp(p1.y, p2.y, t) };
+            return new()
+            {
+                x = Lerp(p1.x, p2.x, t),
+                y = Lerp(p1.y, p2.y, t)
+            };
         }
-        int Lerp(int a, int b, float t)
+        double Lerp(double a, double b, double t)
         {
-            return (int)Math.Round(a + t * (b - a));
+            //var fuck = a + t * (b - a);
+            return a + t * (b - a);
+        }
+        public List<Position> GetLineAhead(Position start, Position direction, 
+            int length = 0, bool extraAffectedPosition = false)
+        {
+            List<Position> ret = new();
+            ret.AddRange(DrawLine(start, direction));
+            double increase = 1d / Distance(start, direction);
+            int counter = 1;
+            Position current = ret[^1];
+            while (!CheckBoundary(current) && (length <= 0 || ret.Count <= length + 1))
+            {
+                current = LerpPoint(start, direction, 1 + increase * counter);
+                current.Round();
+                ret.Add(current);
+                counter++;
+            }
+            //current = LerpPoint(start, direction, 1 + increase * (counter - 1));
+            //current.Round();
+            ret = DrawLine(start, current, extraAffectedPosition);
+
+            if (length == 0) return ret.GetRange(1, ret.Count - 1);
+            return ret.GetRange(1, length);
+        }
+        public List<Position> GetLineAhead(Position start, Position direction,
+            out Dictionary<Position, Position> extraAffectedPositions, int length = 0)
+        {
+            List<Position> ret = new();
+            ret.AddRange(DrawLine(start, direction));
+            double increase = 1d / Distance(start, direction);
+            int counter = 1;
+            Position current = ret[^1];
+            while (!CheckBoundary(current) && (length <= 0 || ret.Count <= length + 1))
+            {
+                current = LerpPoint(start, direction, 1 + increase * counter);
+                current.Round();
+                ret.Add(current);
+                counter++;
+            }
+
+            //current = LerpPoint(start, direction, 1 + increase * (counter - 1));
+            //current.Round();
+            extraAffectedPositions = ExtraAffectedLine(start, current);
+            ret = DrawLine(start, current);
+
+            if (length == 0) return ret.GetRange(1, ret.Count - 1);
+            return ret.GetRange(1, length);
         }
         IEnumerable<Position> getPositionList()
         {
@@ -372,6 +491,14 @@ namespace TFT_Engine.Components
                 }
             }
             return ret;
+        }
+        public void AddRoundEvent(RoundEvent e)
+        {
+            if (!roundLog.ContainsKey(CurrentTick))
+            {
+                roundLog[CurrentTick] = new (){e};
+            }
+            else roundLog[CurrentTick].Add(e);
         }
     }
 }

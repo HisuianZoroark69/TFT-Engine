@@ -16,7 +16,7 @@
         }
         public int atk;
         public int def;
-        public float specialAtkPercentage;
+        public float specialAtkPercentage = 1;
         public int specialDef;
         double _attackSpeed;
         public double attackSpeed
@@ -35,6 +35,6 @@
         public int shield;
         public float decreasedHealing;
         public double attackSpeedCap = 5;
-        public float movingSpeed = 0.25f;
+        public float movingSpeed = 0.75f;
     }
 }
