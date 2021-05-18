@@ -1,0 +1,13 @@
+﻿# Default ignored files
+/shelf/
+/workspace.xml
+# Rider ignored files
+/contentModel.xml
+/projectSettingsUpdater.xml
+/.idea.TFT Engine.iml
+/modules.xml
+# Datasource local storage ignored files
+/../../../../../../../../../:\Users\QuacNoobLol\source\repos\TFT Engine\.idea\.idea.TFT Engine\.idea/dataSources/
+/dataSources.local.xml
+# Editor-based HTTP Client requests
+/httpRequests/
