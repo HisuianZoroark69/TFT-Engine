@@ -16,10 +16,10 @@ namespace TFT_Engine.Components
         public virtual void OnTick() { }
         public virtual void OnEnd() { }
         public virtual void OnSpecialMove() { }
-        public virtual void OnHit(Character attacker, DamageType damageType, bool isSpecial, bool isCrit, float amount) { }
+        public virtual void OnHit(Character attacker, DamageType damageType, bool isSpecial, bool isCrit, double amount) { }
         public virtual void OnAttack(Character target) { }
-        public virtual void OnManaChange(int ManaChangeAmount) { }
-        public virtual int OnDamageCalculation(int damage) { return damage; }
-        public virtual int OnMagicDamageCalculation(int damage) { return damage; }
+        public virtual void OnManaChange(double ManaChangeAmount) { }
+        public virtual double OnDamageCalculation(double damage) { return damage; }
+        public virtual double OnMagicDamageCalculation(double damage) { return damage; }
     }
 }

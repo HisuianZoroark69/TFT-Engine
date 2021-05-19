@@ -59,8 +59,8 @@ namespace TFT_Engine.Components
             set => shieldDurationCounter = (int)(board.defaultTicksPerSec * value);
         }
 
-        protected int _mana;
-        public int mana { 
+        protected double _mana;
+        public double mana { 
             get => _mana;
             set {
                 if (!Channeling)
@@ -70,10 +70,10 @@ namespace TFT_Engine.Components
                 }
             } 
         }
-        public delegate void HitEventHandler(Character Attacker, DamageType damageType, bool isSpecial = false, bool isCrit = false, float amount = 0);
+        public delegate void HitEventHandler(Character Attacker, DamageType damageType, bool isSpecial = false, bool isCrit = false, double amount = 0);
         public event HitEventHandler HitEvent;
 
-        public delegate void ManaChangeEventHandler(int ManaChange);
+        public delegate void ManaChangeEventHandler(double ManaChange);
         public event ManaChangeEventHandler ManaChangeEvent;
 
         int TicksPerAttack { 
@@ -103,10 +103,13 @@ namespace TFT_Engine.Components
                         statusValue = value
                     });
                 }
+
+                _Sleep = value;
             }
         }
         Character SleepSetter;
-        int sleepWakeupDamage;
+        private Set sleepSetterSet;
+        double sleepWakeupDamage;
         int sleepDurationCounter;
         float SleepDuration
         {
@@ -127,9 +130,11 @@ namespace TFT_Engine.Components
                         statusType = StatusType.Stun,
                         statusValue = value
                     });
+                _Stun = value;
             }
         }
         Character Stunner;
+        private Set stunnerSet;
         int stunDurationCounter;
         protected float StunDuration
         {
@@ -150,11 +155,13 @@ namespace TFT_Engine.Components
                         statusType = StatusType.Burn,
                         statusValue = value
                     });
+                _Burn = value;
             }
         }
-        protected int burnDamageEachSec;
+        protected double burnDamageEachSec;
         protected int burnDurationCounter;
         protected Character BurnSetter;
+        protected Set burnSetterSet;
         float burnDuration
         {
             set => burnDurationCounter = (int)(board.defaultTicksPerSec * value);
@@ -177,9 +184,11 @@ namespace TFT_Engine.Components
                         statusType = StatusType.Blind,
                         statusValue = value
                     });
+                _Blind = value;
             }
         }
         Character BlindSetter;
+        private Set blindSetterSet;
         int BlindDurationCounter;
         float BlindDuration
         {
@@ -199,6 +208,7 @@ namespace TFT_Engine.Components
                         statusType = StatusType.Channeling,
                         statusValue = value
                     });
+                _Channeling = value;
             }
         }
         int ChannelingDurationCounter;
@@ -285,12 +295,15 @@ namespace TFT_Engine.Components
             if (burnDurationCounter <= 0)
             {
                 BonusIntakeDamage = 0;
+                BurnSetter = null;
+                burnSetterSet = null;
                 Burn = false;
             }
             else
             {
-                burnDurationCounter--;
-                OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
+                burnDurationCounter--; 
+                if(BurnSetter != null) OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
+                if(burnSetterSet != null) OnHit(burnSetterSet, burnDamageType, burnDamageEachSec);
             }
             if (DecreasedHealingDurationCounter <= 0) currentStats.decreasedHealing = 0;
             else --DecreasedHealingDurationCounter;
@@ -363,45 +376,57 @@ namespace TFT_Engine.Components
             foreach (Item i in items) i.OnAttack(AttackTarget);
             mana += 10;
         }
-        public virtual int DamageCalculation(Character Attacker, float amount)
+        public virtual double PhysicalDamageCalculation(Character Attacker, double amount)
         {
-            float damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def); 
-            foreach (Item i in items) damage = i.OnDamageCalculation((int)damage);
-            return (int)damage;
+            double damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def); 
+            foreach (Item i in items) damage = i.OnDamageCalculation(damage);
+            return damage;
         }
-        public virtual int MagicDamageCalculation(Character Attacker, float amount)
+        public virtual double MagicDamageCalculation(Character Attacker, double amount)
         {
-            float damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.specialDef);       
-            foreach (Item i in items) damage = i.OnMagicDamageCalculation((int)damage);
-            return (int)damage;
+            double damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.specialDef);       
+            foreach (Item i in items) damage = i.OnMagicDamageCalculation(damage);
+            return damage;
         }
-        public virtual void OnHit(Character attacker, DamageType damageType, bool isSpecial = false, bool isCrit = false, float amount = 0)
+        public virtual double PhysicalDamageCalculation(Set Attacker, double amount)
         {
-            int damage = 0;
+            double damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def);
+            foreach (Item i in items) damage = i.OnDamageCalculation(damage);
+            return damage;
+        }
+        public virtual double MagicDamageCalculation(Set Attacker, double amount)
+        {
+            double damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.specialDef);
+            foreach (Item i in items) damage = i.OnMagicDamageCalculation(damage);
+            return damage;
+        }
+        public virtual void OnHit(Character attacker, DamageType damageType, bool isSpecial = false, bool isCrit = false, double amount = 0)
+        {
+            double damage = 0;
 
             //Checking what type of damage is this
             //Basic attack
             if (damageType == DamageType.Physical && !isSpecial)
             {
                 if(!(rand.Next(1,100) <= currentStats.dodgeRate))
-                    damage = DamageCalculation(attacker, attacker.currentStats.atk);
+                    damage = PhysicalDamageCalculation(attacker, attacker.currentStats.atk);
             }
             //Other
             else if (damageType == DamageType.Physical)
             {
-                damage = DamageCalculation(attacker, amount);
+                damage = PhysicalDamageCalculation(attacker, amount);
             }
             else if (damageType == DamageType.Magic)
             {
-                damage = MagicDamageCalculation(attacker, (int)amount);
+                damage = MagicDamageCalculation(attacker, amount);
                 //if(isSpecial) attacker.SpecialAttackAffected.Add(this);
             }
             else if(damageType == DamageType.True)
             {
-                damage = amount != 0 ? (int)amount : attacker.currentStats.atk;
+                damage = amount != 0 ? amount : attacker.currentStats.atk;
             }
             //Check if this is a critical hit
-            if (isCrit) damage = (int)(damage * (1 + defaultBonusCritDamage));
+            if (isCrit) damage = (damage * (1 + defaultBonusCritDamage));
 
             board.AddRoundEvent(new RoundEvent(this,EventType.Hitted)
             {
@@ -432,6 +457,7 @@ namespace TFT_Engine.Components
             if(currentStats.hp <= 0 && !Dead)
             {  
                 Dead = true;
+                board.AddRoundEvent(new RoundEvent(this,EventType.Dead));
                 board.charCounter[teamID]--;
                 board.Characters.Remove(this);
                 foreach (Character c in board.Characters.Where(x => x.AttackTarget == this))
@@ -442,25 +468,98 @@ namespace TFT_Engine.Components
             }
 
             //Adding intake damage mana
-            if (damageType == DamageType.Physical) mana += attacker.currentStats.atk / 100 + damage * 7 / 100;
-            else if (damageType == DamageType.Magic) mana += (int)amount / 100 + damage * 7 / 100;
+            if (damageType == DamageType.Physical && !isSpecial) mana += attacker.currentStats.atk / 100d + damage * 7 / 100;
+            else mana += amount / 100 + damage * 7 / 100;
         }
-        public virtual void OnManaChange(int manaChange)
+        public virtual void OnHit(Set attacker, DamageType damageType, double amount, bool isSpecial = false, bool isCrit = false)
+        {
+            double damage = 0;
+
+            //Checking what type of damage is this
+            //Basic attack
+            if (damageType == DamageType.Physical && !isSpecial)
+            {
+                if (!(rand.Next(1, 100) <= currentStats.dodgeRate))
+                    damage = PhysicalDamageCalculation(attacker, amount);
+            }
+            //Other
+            else if (damageType == DamageType.Physical)
+            {
+                damage = PhysicalDamageCalculation(attacker, amount);
+            }
+            else if (damageType == DamageType.Magic)
+            {
+                damage = MagicDamageCalculation(attacker, amount);
+                //if(isSpecial) attacker.SpecialAttackAffected.Add(this);
+            }
+            else if (damageType == DamageType.True)
+            {
+                damage = amount;
+            }
+            //Check if this is a critical hit
+            if (isCrit) damage = damage * (1 + defaultBonusCritDamage);
+
+            board.AddRoundEvent(new RoundEvent(this, EventType.Hitted)
+            {
+                damageType = damageType,
+                value = damage,
+                isCrit = isCrit,
+                linkedSet = attacker
+            });
+
+            //Check sleep wakeup
+            if (Sleep)
+            {
+                Sleep = false;
+                OnHit(SleepSetter, DamageType.Magic, false, false, sleepWakeupDamage);
+            }
+
+            //Decreasing HP
+            if (currentStats.shield > damage) currentStats.shield -= damage;
+            else { currentStats.hp -= damage - currentStats.shield; currentStats.shield = 0; };
+
+            //Checking if the character is dead
+            //The first conditions bracket can be used to revive the character
+            if (currentStats.hp <= 0 && !Dead)
+            {
+                OnKilled(attacker);
+            }
+            //If the character isn't revived then it is dead :D
+            if (currentStats.hp <= 0 && !Dead)
+            {
+                Dead = true;
+                board.AddRoundEvent(new RoundEvent(this, EventType.Dead));
+                board.charCounter[teamID]--;
+                board.Characters.Remove(this);
+                foreach (Character c in board.Characters.Where(x => x.AttackTarget == this))
+                {
+                    c.AttackTarget = null;
+                }
+                return;
+            }
+
+            //Adding intake damage mana
+            mana += amount / 100 + damage * 7 / 100;
+        }
+        public virtual void OnManaChange(double manaChange)
         {
             if(mana >= currentStats.maxMana && !Sleep && !Stun)
             {
                 mana = 0;
                 currentStats.maxMana = baseStats.maxMana; //Reset max mana if increased
-                SpecialMove();
+                BaseSpecialMove();
             }
         }
-        public virtual void SpecialMove() {
+        public virtual void SpecialMove() { }
+        public void BaseSpecialMove()
+        {
             SpecialAttackAffected.Clear();
             foreach (Item i in items) i.OnSpecialMove();
             board.AddRoundEvent(new RoundEvent(this, EventType.SpecialAttack));
-            //foreach (Set s in set) s.OnSpecialMove();
+            SpecialMove();
         }
         public virtual void OnKilled(Character Killer) { }
+        public virtual void OnKilled(Set Killer) { }
         public virtual void OnProjectileHit(Character Hitted){ }
         public virtual void AddItem(Item item)
         {
@@ -509,7 +608,7 @@ namespace TFT_Engine.Components
             Blind = false;
             Burn = false;
         }
-        public virtual void SetSleep(Character setter, float duration, int wakeupDamage)
+        public virtual void SetSleep(Character setter, float duration, double wakeupDamage)
         {
             if (!ImmuneCC)
             {
@@ -519,7 +618,7 @@ namespace TFT_Engine.Components
                 sleepWakeupDamage = wakeupDamage;
             }
         }
-        public virtual void SetBurn(Character setter, float duration, int burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
+        public virtual void SetBurn(Character setter, float duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
         {
             Burn = true;
             BurnSetter = setter;
@@ -527,6 +626,15 @@ namespace TFT_Engine.Components
             burnDamageEachSec = burnDamage / burnDurationCounter;
             burnDamageType = burnType;
             BonusIntakeDamagePercentage *= 1+BonusIntakeDamage;
+        }
+        public virtual void SetBurn(Set setter, float duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
+        {
+            Burn = true;
+            burnSetterSet = setter;
+            burnDuration = duration;
+            burnDamageEachSec = burnDamage / burnDurationCounter;
+            burnDamageType = burnType;
+            BonusIntakeDamagePercentage *= 1 + BonusIntakeDamage;
         }
         public virtual void SetStun(Character setter, float duration)
         {
@@ -537,10 +645,25 @@ namespace TFT_Engine.Components
                 StunDuration = duration;
             }
         }
+        public virtual void SetStun(Set setter, float duration)
+        {
+            if (!ImmuneCC)
+            {
+                Stun = true;
+                stunnerSet = setter;
+                StunDuration = duration;
+            }
+        }
         public virtual void SetBlind(Character setter, float duration)
         {
             Blind = true;
             BlindSetter = setter;
+            BlindDuration = duration;
+        }
+        public virtual void SetBlind(Set setter, float duration)
+        {
+            Blind = true;
+            blindSetterSet = setter;
             BlindDuration = duration;
         }
         public virtual void SetChanneling(float duration, Character channelTarget = null)

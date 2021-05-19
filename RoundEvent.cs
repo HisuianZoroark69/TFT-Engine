@@ -8,21 +8,24 @@ using TFT_Engine.Components;
 namespace TFT_Engine
 {
     public enum EventType {
+        Null,
         BasicAttack,
         Hitted,
         Move,
         SpecialAttack,
         Healing,
-        StatusChanges
+        StatusChanges,
+        Dead
     }
 
     public enum StatusType
     {
+        Null,
         Stun,
         Sleep,
         Burn,
         Blind,
-        Channeling
+        Channeling,
     }
     public class RoundEvent
     {
@@ -31,15 +34,16 @@ namespace TFT_Engine
         public StatusType statusType;
         public bool statusValue;
         public bool isCrit = false;
-        public int value;
+        public double value;
         public DamageType damageType;
         public List<Position> linkedPositions;
         public CharList linkedCharacters;
-
+        public Set linkedSet;
         public RoundEvent(Character main, EventType et)
         {
             this.main = main;
             eventType = et;
         }
+
     }
 }

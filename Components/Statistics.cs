@@ -3,8 +3,8 @@
     public class Statistics
     {
         public int maxHp;
-        int _hp;
-        public int hp { 
+        double _hp;
+        public double hp { 
             get {
                 return _hp;
             } 
@@ -32,7 +32,7 @@
         public int maxMana;
         public int critRate;
         public int dodgeRate;
-        public int shield;
+        public double shield;
         public float decreasedHealing;
         public double attackSpeedCap = 5;
         public float movingSpeed = 0.75f;
