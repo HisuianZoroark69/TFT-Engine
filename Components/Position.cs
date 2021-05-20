@@ -6,14 +6,21 @@ namespace TFT_Engine.Components
     {
         public double x;
         public double y;
-        public double z { get { return 0 - x - y; } set { y = 0 - value - x; } }
+
         public Position(Position p)
         {
             x = p.x;
             y = p.y;
         }
+
         public Position()
         {
+        }
+
+        public double z
+        {
+            get => 0 - x - y;
+            set => y = 0 - value - x;
         }
 
         public void Round()
@@ -21,6 +28,7 @@ namespace TFT_Engine.Components
             x = Math.Round(x);
             y = Math.Round(y);
         }
+
         public override int GetHashCode()
         {
             return HashCode.Combine(x, y);
@@ -30,10 +38,12 @@ namespace TFT_Engine.Components
         {
             return Equals(obj as Position);
         }
+
         public static bool operator ==(Position p1, Position p2)
         {
             return p1.Equals(p2);
         }
+
         public static bool operator !=(Position p1, Position p2)
         {
             return !p1.Equals(p2);

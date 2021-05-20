@@ -1,21 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace TFT_Engine.Components
 {
     public class Projectile
     {
+        private readonly List<Position> route;
+        private readonly float velocity;
         public Character creator;
-        public Position position;
-        int velocityCounter;
-        private float velocity;
-        private List<Position> route;
         public Position currentPosition;
         public Dictionary<Position, Position> ExtraAffectedPositions;
+        public Position position;
         private int routeCounter;
+        private int velocityCounter;
 
         public Projectile(Character creator, Position from, Position to, float velocity = 0.2f)
         {
@@ -31,6 +27,7 @@ namespace TFT_Engine.Components
         {
             creator.board.TickEvent -= OnTick;
         }
+
         public void OnTick()
         {
             if (velocityCounter == 0)
@@ -41,16 +38,18 @@ namespace TFT_Engine.Components
                     Destroy();
                     return;
                 }
+
                 currentPosition = route[routeCounter];
-                if(creator.board.Characters[currentPosition] != null)
+                if (creator.board.Characters[currentPosition] != null)
                     creator.OnProjectileHit(creator.board.Characters[currentPosition]);
-                if (ExtraAffectedPositions.ContainsKey(currentPosition) && 
+                if (ExtraAffectedPositions.ContainsKey(currentPosition) &&
                     creator.board.Characters[ExtraAffectedPositions[currentPosition]] != null)
-                {
                     creator.OnProjectileHit(creator.board.Characters[ExtraAffectedPositions[currentPosition]]);
-                }
             }
-            else velocityCounter--;
+            else
+            {
+                velocityCounter--;
+            }
         }
     }
 }
