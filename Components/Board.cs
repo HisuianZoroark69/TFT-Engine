@@ -10,6 +10,8 @@ namespace TFT_Engine.Components
     {
         public delegate void CharacterStartDelegate();
 
+        public delegate void SetStartDelegate();
+
         public delegate void EndEventHandler();
 
         /// <summary>
@@ -90,7 +92,7 @@ namespace TFT_Engine.Components
             sets = new List<Set>(s);
             foreach (var set in sets)
             {
-                StartEvent += set.OnStart;
+                SetStartEvent += set.OnStart;
                 TickEvent += set.OnTick;
                 EndEvent += set.OnEnd;
                 set.board = this;
@@ -122,6 +124,7 @@ namespace TFT_Engine.Components
         public event StartEventHandler StartEvent;
         public event TickEventHandler TickEvent;
         public event EndEventHandler EndEvent;
+        public event SetStartDelegate SetStartEvent;
 
         /// <summary>
         ///     Start the turn
@@ -140,7 +143,6 @@ namespace TFT_Engine.Components
                     charCounter.Add(c.teamID, 0);
                     charCounter[c.teamID]++;
                 }
-
             foreach (var s in sets)
             {
                 //Reset type counter
@@ -157,6 +159,7 @@ namespace TFT_Engine.Components
             CurrentTick = 0;
             roundLog = new Dictionary<int, List<RoundEvent>>();
             CharacterStart?.Invoke();
+            SetStartEvent?.Invoke();
             StartEvent?.Invoke();
             while ((from x in charCounter where x.Value == 0 select x).Count() < charCounter.Keys.Count - 1)
             {

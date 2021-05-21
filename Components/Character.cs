@@ -308,16 +308,14 @@ namespace TFT_Engine.Components
         public virtual void OverrideOnTick()
         {
         }
-
         public void OnTick()
         {
+            AttackTarget = null;
             //Check if character is dead or stun or sleep
             if (!Dead && !Sleep && !Stun && !Channeling)
             {
                 //Checking if existing target can be targeted
                 if (AttackTarget is {canBeTargeted: false}) AttackTarget = null;
-                //Trigger property
-                if (AttackTarget == null) AttackTarget = null;
                 //Move to target if outside of attack range
                 if (AttackTarget != null &&
                     board.Distance(AttackTarget.position, position) > currentStats.attackRange && !Moving)
@@ -332,6 +330,7 @@ namespace TFT_Engine.Components
                     if (moveCounter >= movingSpeed)
                     {
                         Move();
+                        moveCounter = 0;
                         Moving = false;
                     }
                 }
@@ -343,6 +342,7 @@ namespace TFT_Engine.Components
                     attackCounter = 0;
                 }
             }
+
 
             //Check shield duration
             if (--shieldDurationCounter <= 0) currentStats.shield = 0;
@@ -373,7 +373,8 @@ namespace TFT_Engine.Components
             if (ChannelingDurationCounter > 0)
             {
                 ChannelingDurationCounter--;
-                if (channelTarget != null && !board.Characters.Contains(channelTarget)) ChannelingDurationCounter = 0;
+                if (channelTarget != null && !board.Characters.Contains(channelTarget))
+                    ChannelingDurationCounter = 0;
                 if (ChannelingDurationCounter == 0) Channeling = false;
             }
 
@@ -384,7 +385,6 @@ namespace TFT_Engine.Components
                 GraduallyHealDurationCounter--;
                 Heal(GraduallyHealAmountPerTick);
             }
-
             OverrideOnTick();
         }
 
