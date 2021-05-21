@@ -32,7 +32,7 @@ namespace TFT_Engine
         public EventType eventType;
         public bool isCrit = false;
         public CharList linkedCharacters;
-        public List<Position> linkedPositions;
+        public Position linkedPositions;
         public Set linkedSet;
         public Character main;
         public StatusType statusType;

@@ -413,7 +413,7 @@ namespace TFT_Engine.Components
             position = board.PathFinding(position, AttackTarget.position)[1];
             board.AddRoundEvent(new RoundEvent(this, EventType.Move)
             {
-                linkedPositions = new List<Position> {position}
+                linkedPositions = position
             });
         }
 
@@ -461,6 +461,18 @@ namespace TFT_Engine.Components
             var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 /
                          (100 + currentStats.specialDef);
             foreach (var i in items) damage = i.OnMagicDamageCalculation(damage);
+            return damage;
+        }
+        public virtual double PhysicalDamageCalculation(double amount)
+        {
+            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def);
+            return damage;
+        }
+
+        public virtual double MagicDamageCalculation(double amount)
+        {
+            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 /
+                         (100 + currentStats.specialDef);
             return damage;
         }
 
@@ -686,7 +698,7 @@ namespace TFT_Engine.Components
             shieldDuration = duration;
         }
 
-        public virtual void Heal(int amount)
+        public virtual void Heal(double amount)
         {
             board.AddRoundEvent(new RoundEvent(this, EventType.Healing)
             {
