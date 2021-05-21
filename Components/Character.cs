@@ -112,6 +112,9 @@ namespace TFT_Engine.Components
         public Character(string name, Guid teamId, Statistics baseStats, int familyId, int star, int cost,
             params Set[] s)
         {
+            this.star = star;
+            this.cost = cost;
+            FamilyId = familyId;
             Name = name;
             teamID = teamId;
             this.baseStats = baseStats;
