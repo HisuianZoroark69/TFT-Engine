@@ -33,13 +33,13 @@ namespace TFT_Engine.Components
             if (velocityCounter == 0)
             {
                 velocityCounter = (int) velocity * creator.board.defaultTicksPerSec;
-                if (++routeCounter >= route.Count)
+                if (routeCounter >= route.Count)
                 {
                     Destroy();
                     return;
                 }
-
-                currentPosition = route[routeCounter];
+                currentPosition = route[routeCounter++];
+                
                 if (creator.board.Characters[currentPosition] != null)
                     creator.OnProjectileHit(creator.board.Characters[currentPosition]);
                 if (ExtraAffectedPositions.ContainsKey(currentPosition) &&
