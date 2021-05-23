@@ -317,8 +317,7 @@ namespace TFT_Engine.Components
                 //Checking if existing target can be targeted
                 if (AttackTarget is {canBeTargeted: false}) AttackTarget = null;
                 //Move to target if outside of attack range
-                if (AttackTarget != null &&
-                    board.Distance(AttackTarget.position, position) > currentStats.attackRange && !Moving)
+                if (board.Distance(AttackTarget.position, position) > currentStats.attackRange && !Moving)
                 {
                     Moving = true;
                     moveCounter = 0;
@@ -336,7 +335,7 @@ namespace TFT_Engine.Components
                 }
 
                 //Attack
-                if (++attackCounter >= TicksPerAttack && TicksPerAttack > 0 && !Moving)
+                if (board.Distance(AttackTarget.position, position) <= currentStats.attackRange && ++attackCounter >= TicksPerAttack && TicksPerAttack > 0 && !Moving)
                 {
                     Attack();
                     attackCounter = 0;
@@ -375,7 +374,8 @@ namespace TFT_Engine.Components
                 ChannelingDurationCounter--;
                 if (channelTarget != null && !board.Characters.Contains(channelTarget))
                     ChannelingDurationCounter = 0;
-                if (ChannelingDurationCounter == 0) Channeling = false;
+                if (ChannelingDurationCounter == 0) 
+                    Channeling = false;
             }
 
             if (BlindDurationCounter <= 0) Blind = false;
