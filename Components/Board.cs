@@ -75,6 +75,7 @@ namespace TFT_Engine.Components
         public Dictionary<int, List<RoundEvent>> roundLog;
 
         public List<Set> sets;
+        private List<Effect> effects = new();
 
         /// <summary>
         ///     Initialize a new board
@@ -131,6 +132,7 @@ namespace TFT_Engine.Components
         /// </summary>
         public Guid Start(float tickPerSec = 20)
         {
+            effects.Clear();
             Characters = new CharList(BaseCharacters);
             charCounter = new Dictionary<Guid, int>();
             foreach (var c in Characters)
@@ -165,7 +167,12 @@ namespace TFT_Engine.Components
             {
                 CurrentTick++;
                 TickEvent?.Invoke();
-                Thread.Sleep((int) (TicksPerSecond > 0 ? 1000 / TicksPerSecond : 0));
+                foreach (Effect e in new List<Effect>(effects))
+                {
+                    e.OnTick();
+                    if (e.DurationCounter == 0) effects.Remove(e);
+                }
+                //Thread.Sleep((int) (TicksPerSecond > 0 ? 1000 / TicksPerSecond : 0));
             }
 
             //await Task.Run(() => { while (!charCounter.Values.Contains(0)){} });
@@ -502,6 +509,12 @@ namespace TFT_Engine.Components
             if (!roundLog.ContainsKey(CurrentTick))
                 roundLog[CurrentTick] = new List<RoundEvent> {e};
             else roundLog[CurrentTick].Add(e);
+        }
+
+        public void AddEffect(Effect e)
+        {
+            e.board = this;
+            effects.Add(e);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TFT_Engine.Effects;
 
 namespace TFT_Engine.Components
 {
@@ -36,6 +37,8 @@ namespace TFT_Engine.Components
 
         public delegate void ManaChangeEventHandler(double ManaChange);
 
+        
+
 
         private Character _attackTarget;
 
@@ -68,11 +71,11 @@ namespace TFT_Engine.Components
         public Board board;
         public float BonusIntakeDamage;
         public float BonusIntakeDamagePercentage;
-        protected double burnDamageEachSec;
-        private DamageType burnDamageType;
-        protected int burnDurationCounter;
-        protected Character BurnSetter;
-        protected Set burnSetterSet;
+        //protected double burnDamageEachSec;
+        //private DamageType burnDamageType;
+        //protected int burnDurationCounter;
+        //protected Character BurnSetter;
+        //protected Set burnSetterSet;
         public bool canBeTargeted;
         private int ChannelingDurationCounter;
         protected Character channelTarget;
@@ -93,7 +96,20 @@ namespace TFT_Engine.Components
         private bool Moving;
 
         public string Name;
-        public Position position;
+
+        private Position _position;
+        public Position position
+        {
+            get => _position;
+            set
+            {
+                _position = value;
+                board.AddRoundEvent(new RoundEvent(this, EventType.Move)
+                {
+                    linkedPositions = value
+                });
+            }
+        }
 
         public Random rand = new();
         public List<Set> set;
@@ -229,7 +245,7 @@ namespace TFT_Engine.Components
             set => stunDurationCounter = (int) (board.defaultTicksPerSec * value);
         }
 
-        public bool Burn
+        /*public bool Burn
         {
             get => _Burn;
             protected set
@@ -242,12 +258,12 @@ namespace TFT_Engine.Components
                     });
                 _Burn = value;
             }
-        }
+        }*/
 
-        private float burnDuration
+        /*private float burnDuration
         {
             set => burnDurationCounter = (int) (board.defaultTicksPerSec * value);
-        }
+        }*/
 
         public bool Blind
         {
@@ -319,6 +335,7 @@ namespace TFT_Engine.Components
                 //Move to target if outside of attack range
                 if (board.Distance(AttackTarget.position, position) > currentStats.attackRange && !Moving)
                 {
+                    Move();
                     Moving = true;
                     moveCounter = 0;
                 }
@@ -328,7 +345,6 @@ namespace TFT_Engine.Components
                     moveCounter++;
                     if (moveCounter >= movingSpeed)
                     {
-                        Move();
                         moveCounter = 0;
                         Moving = false;
                     }
@@ -342,14 +358,13 @@ namespace TFT_Engine.Components
                 }
             }
 
-
             //Check shield duration
             if (--shieldDurationCounter <= 0) currentStats.shield = 0;
             if (Sleep)
                 if (--sleepDurationCounter <= 0)
                     Sleep = false;
 
-            if (burnDurationCounter <= 0)
+            /*if (burnDurationCounter <= 0)
             {
                 BonusIntakeDamage = 0;
                 BurnSetter = null;
@@ -361,7 +376,7 @@ namespace TFT_Engine.Components
                 burnDurationCounter--;
                 if (BurnSetter != null) OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
                 if (burnSetterSet != null) OnHit(burnSetterSet, burnDamageType, burnDamageEachSec);
-            }
+            }*/
 
             if (DecreasedHealingDurationCounter <= 0) currentStats.decreasedHealing = 0;
             else --DecreasedHealingDurationCounter;
@@ -414,10 +429,6 @@ namespace TFT_Engine.Components
         public virtual void Move()
         {
             position = board.PathFinding(position, AttackTarget.position)[1];
-            board.AddRoundEvent(new RoundEvent(this, EventType.Move)
-            {
-                linkedPositions = position
-            });
         }
 
         public virtual void Attack()
@@ -720,7 +731,7 @@ namespace TFT_Engine.Components
             Stun = false;
             Sleep = false;
             Blind = false;
-            Burn = false;
+            //Burn = false;
         }
 
         public virtual void SetSleep(Character setter, float duration, double wakeupDamage)
@@ -728,32 +739,36 @@ namespace TFT_Engine.Components
             if (!ImmuneCC)
             {
                 SleepSetter = setter;
+                Channeling = false;
                 SleepDuration = duration;
                 Sleep = true;
                 sleepWakeupDamage = wakeupDamage;
             }
         }
 
-        public virtual void SetBurn(Character setter, float duration, double burnDamage, DamageType burnType,
-            float BonusIntakeDamage = 0)
+        public virtual void SetBurn(Character setter, float duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
         {
-            Burn = true;
-            BurnSetter = setter;
+            //Burn = true;
+            Effect burn = new Burn((int) (duration * board.defaultTicksPerSec), burnType, burnDamage, setter, this);
+            board.AddEffect(burn);
+            /*BurnSetter = setter;
             burnDuration = duration;
             burnDamageEachSec = burnDamage / burnDurationCounter;
-            burnDamageType = burnType;
+            burnDamageType = burnType;*/
             BonusIntakeDamagePercentage *= 1 + BonusIntakeDamage;
         }
 
         public virtual void SetBurn(Set setter, float duration, double burnDamage, DamageType burnType,
             float BonusIntakeDamage = 0)
         {
-            Burn = true;
+            Effect burn = new Burn((int)(duration * board.defaultTicksPerSec), burnType, burnDamage, setter, this);
+            board.AddEffect(burn);
+            /*Burn = true;
             burnSetterSet = setter;
             burnDuration = duration;
             burnDamageEachSec = burnDamage / burnDurationCounter;
             burnDamageType = burnType;
-            BonusIntakeDamagePercentage *= 1 + BonusIntakeDamage;
+            BonusIntakeDamagePercentage *= 1 + BonusIntakeDamage;*/
         }
 
         public virtual void SetStun(Character setter, float duration)
@@ -761,6 +776,7 @@ namespace TFT_Engine.Components
             if (!ImmuneCC)
             {
                 Stun = true;
+                Channeling = false;
                 Stunner = setter;
                 StunDuration = duration;
             }
@@ -771,6 +787,7 @@ namespace TFT_Engine.Components
             if (!ImmuneCC)
             {
                 Stun = true;
+                Channeling = false;
                 stunnerSet = setter;
                 StunDuration = duration;
             }
