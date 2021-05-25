@@ -75,7 +75,7 @@ namespace TFT_Engine.Components
         public Dictionary<int, List<RoundEvent>> roundLog;
 
         public List<Set> sets;
-        private List<Effect> effects = new();
+        public List<Effect> effects = new();
 
         /// <summary>
         ///     Initialize a new board
@@ -170,7 +170,8 @@ namespace TFT_Engine.Components
                 foreach (Effect e in new List<Effect>(effects))
                 {
                     e.OnTick();
-                    if (e.DurationCounter == 0) effects.Remove(e);
+                    if (e.DurationCounter == 0) 
+                        effects.Remove(e);
                 }
                 //Thread.Sleep((int) (TicksPerSecond > 0 ? 1000 / TicksPerSecond : 0));
             }

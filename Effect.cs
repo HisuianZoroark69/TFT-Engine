@@ -15,17 +15,29 @@ namespace TFT_Engine
         public Character Effected;
         public Set EffectorSet;
 
-        protected Effect(int Duration, Character effector, Character effected = null)
+        protected Effect(int Duration, Character effector, Character effected)
         {
             DurationCounter = Duration;
             Effector = effector;
             Effected = effected;
+            effected.board.AddRoundEvent(new RoundEvent(effected,EventType.Effects)
+            {
+                statusTypeName = GetType().Name,
+                linkedCharacters = new(){effector},
+                statusValue = true
+            });
         }
-        protected Effect(int Duration, Set effector, Character effected = null)
+        protected Effect(int Duration, Set effector, Character effected)
         {
             DurationCounter = Duration;
             EffectorSet = effector;
             Effected = effected;
+            board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
+            {
+                statusTypeName = GetType().Name,
+                linkedSet = effector,
+                statusValue = true
+            });
         }
 
         public void OnTick()
@@ -38,7 +50,28 @@ namespace TFT_Engine
             }
         }
 
+        public void Abort()
+        {
+            DurationCounter = 0;
+        }
         public virtual void OverrideOnTick() { }
-        public virtual void OnElapsed(){}
+
+        public virtual void OnElapsed()
+        {
+            if(Effector != null)
+                board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
+                {
+                    statusTypeName = GetType().Name,
+                    linkedCharacters = new() { Effector },
+                    statusValue = false
+                });
+            else
+                board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
+                {
+                    statusTypeName = GetType().Name,
+                    linkedSet = EffectorSet,
+                    statusValue = false
+                });
+        }
     }
 }

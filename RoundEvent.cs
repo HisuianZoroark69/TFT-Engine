@@ -13,6 +13,7 @@ namespace TFT_Engine
         Healing,
         StatusChanges,
         ManaChange,
+        Effects,
         Dead
     }
 
@@ -36,6 +37,7 @@ namespace TFT_Engine
         public Set linkedSet;
         public Character main;
         public StatusType statusType;
+        public string statusTypeName;
         public bool statusValue;
         public double value;
 

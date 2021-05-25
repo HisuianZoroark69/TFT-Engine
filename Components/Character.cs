@@ -46,7 +46,7 @@ namespace TFT_Engine.Components
         private bool _Blind;
 
         //Burn
-        private bool _Burn;
+        //private bool _Burn;
 
         private bool _Channeling;
 
@@ -114,15 +114,15 @@ namespace TFT_Engine.Components
         public Random rand = new();
         public List<Set> set;
         protected int shieldDurationCounter;
-        private int sleepDurationCounter;
-        private Character SleepSetter;
-        private Set sleepSetterSet;
-        private double sleepWakeupDamage;
+        //private int sleepDurationCounter;
+        //private Character SleepSetter;
+        //private Set sleepSetterSet;
+        //private double sleepWakeupDamage;
         public HashSet<Character> SpecialAttackAffected;
         public int star;
-        private int stunDurationCounter;
-        private Character Stunner;
-        private Set stunnerSet;
+        //private int stunDurationCounter;
+        //private Character Stunner;
+        //private Set stunnerSet;
         public Guid teamID;
 
         public Character(string name, Guid teamId, Statistics baseStats, int familyId, int star, int cost,
@@ -178,8 +178,12 @@ namespace TFT_Engine.Components
                 if (!Channeling)
                 {
                     currentStats.mana = value;
+                    board.AddRoundEvent(new RoundEvent(this, EventType.ManaChange)
+                    {
+                        value = value - _mana
+                    });
                     _mana = value;
-                    ManaChangeEvent.Invoke(_mana - _oldMana);
+                    ManaChangeEvent?.Invoke(value - _oldMana);
                     _oldMana = value;
                 }
             }
@@ -208,9 +212,9 @@ namespace TFT_Engine.Components
             protected set
             {
                 if (value != _Sleep)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.StatusChanges)
+                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusType = StatusType.Sleep,
+                        statusTypeName = "Sleep",
                         statusValue = value
                     });
 
@@ -218,11 +222,11 @@ namespace TFT_Engine.Components
             }
         }
 
-        private float SleepDuration
+        /*private float SleepDuration
         {
             //get => sleepDurationCounter / board.defaultTicksPerSec;
             set => sleepDurationCounter = (int) (board.defaultTicksPerSec * value);
-        }
+        }*/
 
         public bool Stun
         {
@@ -230,20 +234,20 @@ namespace TFT_Engine.Components
             protected set
             {
                 if (value != _Stun)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.StatusChanges)
+                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusType = StatusType.Stun,
+                        statusTypeName = "Stun",
                         statusValue = value
                     });
                 _Stun = value;
             }
         }
 
-        protected float StunDuration
+        /*protected float StunDuration
         {
             get => stunDurationCounter / board.defaultTicksPerSec;
             set => stunDurationCounter = (int) (board.defaultTicksPerSec * value);
-        }
+        }*/
 
         /*public bool Burn
         {
@@ -271,9 +275,9 @@ namespace TFT_Engine.Components
             protected set
             {
                 if (value != _Blind)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.StatusChanges)
+                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusType = StatusType.Blind,
+                        statusTypeName = "Blind",
                         statusValue = value
                     });
                 _Blind = value;
@@ -292,9 +296,9 @@ namespace TFT_Engine.Components
             protected set
             {
                 if (value != _Channeling)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.StatusChanges)
+                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusType = StatusType.Channeling,
+                        statusTypeName = "Channeling",
                         statusValue = value
                     });
                 _Channeling = value;
@@ -327,8 +331,10 @@ namespace TFT_Engine.Components
         public void OnTick()
         {
             AttackTarget = null;
+            bool cc = (from x in board.effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any();
+            if (cc) Channeling = false;
             //Check if character is dead or stun or sleep
-            if (!Dead && !Sleep && !Stun && !Channeling)
+            if (!Dead && !cc && !Channeling)
             {
                 //Checking if existing target can be targeted
                 if (AttackTarget is {canBeTargeted: false}) AttackTarget = null;
@@ -360,9 +366,10 @@ namespace TFT_Engine.Components
 
             //Check shield duration
             if (--shieldDurationCounter <= 0) currentStats.shield = 0;
-            if (Sleep)
+
+            /*if (Sleep)
                 if (--sleepDurationCounter <= 0)
-                    Sleep = false;
+                    Sleep = false;*/
 
             /*if (burnDurationCounter <= 0)
             {
@@ -381,10 +388,10 @@ namespace TFT_Engine.Components
             if (DecreasedHealingDurationCounter <= 0) currentStats.decreasedHealing = 0;
             else --DecreasedHealingDurationCounter;
 
-            if (stunDurationCounter <= 0) Stun = false;
-            else stunDurationCounter--;
+            /*if (stunDurationCounter <= 0) Stun = false;
+            else stunDurationCounter--;*/
 
-            if (ChannelingDurationCounter > 0)
+            if (ChannelingDurationCounter > 0 && Channeling)
             {
                 ChannelingDurationCounter--;
                 if (channelTarget != null && !board.Characters.Contains(channelTarget))
@@ -529,11 +536,11 @@ namespace TFT_Engine.Components
             });
 
             //Check sleep wakeup
-            if (Sleep)
+            /*if (Sleep)
             {
                 Sleep = false;
                 OnHit(SleepSetter, DamageType.Magic, false, false, sleepWakeupDamage);
-            }
+            }*/
 
             //Decreasing HP
             if (currentStats.shield > damage)
@@ -607,11 +614,11 @@ namespace TFT_Engine.Components
             });
 
             //Check sleep wakeup
-            if (Sleep)
+            /*if (Sleep)
             {
                 Sleep = false;
                 OnHit(SleepSetter, DamageType.Magic, false, false, sleepWakeupDamage);
-            }
+            }*/
 
             //Decreasing HP
             if (currentStats.shield > damage)
@@ -646,10 +653,6 @@ namespace TFT_Engine.Components
 
         public virtual void OnManaChange(double manaChange)
         {
-            board.AddRoundEvent(new RoundEvent(this, EventType.ManaChange)
-            {
-                value = manaChange
-            });
             if (mana >= currentStats.maxMana && !Sleep && !Stun)
             {
                 mana = 0;
@@ -728,6 +731,13 @@ namespace TFT_Engine.Components
 
         public virtual void Cleanse()
         {
+            foreach (Effect e in board.effects)
+            {
+                if (e is Effects.Stun or Effects.Sleep)
+                {
+                    e.Abort();
+                }
+            }
             Stun = false;
             Sleep = false;
             Blind = false;
@@ -738,11 +748,12 @@ namespace TFT_Engine.Components
         {
             if (!ImmuneCC)
             {
-                SleepSetter = setter;
-                Channeling = false;
+                Sleep sleep = new((int) (duration * board.defaultTicksPerSec),setter,this,wakeupDamage);
+                board.AddEffect(sleep);
+                /*SleepSetter = setter;
                 SleepDuration = duration;
                 Sleep = true;
-                sleepWakeupDamage = wakeupDamage;
+                sleepWakeupDamage = wakeupDamage;*/
             }
         }
 
@@ -775,10 +786,11 @@ namespace TFT_Engine.Components
         {
             if (!ImmuneCC)
             {
-                Stun = true;
-                Channeling = false;
+                Stun stun = new((int)(duration * board.defaultTicksPerSec), setter, this);
+                board.AddEffect(stun);
+                /*Stun = true;
                 Stunner = setter;
-                StunDuration = duration;
+                StunDuration = duration;*/
             }
         }
 
@@ -786,10 +798,11 @@ namespace TFT_Engine.Components
         {
             if (!ImmuneCC)
             {
-                Stun = true;
-                Channeling = false;
+                Stun stun = new((int) (duration * board.defaultTicksPerSec), setter, this);
+                board.AddEffect(stun);
+                /*Stun = true;
                 stunnerSet = setter;
-                StunDuration = duration;
+                StunDuration = duration;*/
             }
         }
 
