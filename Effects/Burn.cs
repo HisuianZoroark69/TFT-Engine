@@ -12,14 +12,14 @@ namespace TFT_Engine.Effects
         private DamageType damageType;
         private double AmountPerTick;
 
-        public Burn(int Duration, DamageType type, double amount, Character effector, Character effected = null) : base(
+        public Burn(double Duration, DamageType type, double amount, Character effector, Character effected = null) : base(
             Duration, effector, effected)
         {
             damageType = type;
             AmountPerTick = amount / Duration;
         }
 
-        public Burn(int Duration, DamageType type, double amount, Set effector, Character effected = null) : base(
+        public Burn(double Duration, DamageType type, double amount, Set effector, Character effected = null) : base(
             Duration, effector, effected)
         {
             damageType = type;

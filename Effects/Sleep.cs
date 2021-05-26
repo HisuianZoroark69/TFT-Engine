@@ -11,12 +11,12 @@ namespace TFT_Engine.Effects
     class Sleep : Effect
     {
         private double WakeupDamage;
-        public Sleep(int Duration, Character effector, Character effected, double wakeupDamage) : base(Duration, effector, effected)
+        public Sleep(double Duration, Character effector, Character effected, double wakeupDamage) : base(Duration, effector, effected)
         {
             WakeupDamage = wakeupDamage;
         }
 
-        public Sleep(int Duration, Set effector, Character effected, double wakeupDamage) : base(Duration, effector, effected)
+        public Sleep(double Duration, Set effector, Character effected, double wakeupDamage) : base(Duration, effector, effected)
         {
             WakeupDamage = wakeupDamage;
         }

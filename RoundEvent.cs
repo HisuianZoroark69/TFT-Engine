@@ -15,6 +15,7 @@ namespace TFT_Engine
         Healing,
         ManaChange,
         Effects,
+        PositionEffects,
         Dead
     }
 
@@ -44,14 +45,20 @@ namespace TFT_Engine
         public Position linkedPositions;
         public Set linkedSet;
         public Character main;
-        public string statusTypeName;
-        public bool statusValue;
+        public string EffectName;
+        public bool EffectValue;
         public double value;
 
         public RoundEvent(Character main, EventType et)
         {
             this.main = main;
             eventType = et;
+        }
+
+        public RoundEvent(Position pos)
+        {
+            linkedPositions = pos;
+            eventType = EventType.PositionEffects;
         }
 
         public RoundEvent()

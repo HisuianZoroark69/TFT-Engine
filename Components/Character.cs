@@ -214,8 +214,8 @@ namespace TFT_Engine.Components
                 if (value != _Sleep)
                     board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusTypeName = "Sleep",
-                        statusValue = value
+                        EffectName = "Sleep",
+                        EffectValue = value
                     });
 
                 _Sleep = value;
@@ -236,8 +236,8 @@ namespace TFT_Engine.Components
                 if (value != _Stun)
                     board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusTypeName = "Stun",
-                        statusValue = value
+                        EffectName = "Stun",
+                        EffectValue = value
                     });
                 _Stun = value;
             }
@@ -258,7 +258,7 @@ namespace TFT_Engine.Components
                     board.AddRoundEvent(new RoundEvent(this, EventType.StatusChanges)
                     {
                         statusType = StatusType.Burn,
-                        statusValue = value
+                        EffectValue = value
                     });
                 _Burn = value;
             }
@@ -277,8 +277,8 @@ namespace TFT_Engine.Components
                 if (value != _Blind)
                     board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusTypeName = "Blind",
-                        statusValue = value
+                        EffectName = "Blind",
+                        EffectValue = value
                     });
                 _Blind = value;
             }
@@ -298,8 +298,8 @@ namespace TFT_Engine.Components
                 if (value != _Channeling)
                     board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
-                        statusTypeName = "Channeling",
-                        statusValue = value
+                        EffectName = "Channeling",
+                        EffectValue = value
                     });
                 _Channeling = value;
             }
@@ -748,7 +748,7 @@ namespace TFT_Engine.Components
         {
             if (!ImmuneCC)
             {
-                Sleep sleep = new((int) (duration * board.defaultTicksPerSec),setter,this,wakeupDamage);
+                Sleep sleep = new(duration,setter,this,wakeupDamage);
                 board.AddEffect(sleep);
                 /*SleepSetter = setter;
                 SleepDuration = duration;
@@ -760,7 +760,7 @@ namespace TFT_Engine.Components
         public virtual void SetBurn(Character setter, float duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
         {
             //Burn = true;
-            Effect burn = new Burn((int) (duration * board.defaultTicksPerSec), burnType, burnDamage, setter, this);
+            Effect burn = new Burn(duration, burnType, burnDamage, setter, this);
             board.AddEffect(burn);
             /*BurnSetter = setter;
             burnDuration = duration;
@@ -772,7 +772,7 @@ namespace TFT_Engine.Components
         public virtual void SetBurn(Set setter, float duration, double burnDamage, DamageType burnType,
             float BonusIntakeDamage = 0)
         {
-            Effect burn = new Burn((int)(duration * board.defaultTicksPerSec), burnType, burnDamage, setter, this);
+            Effect burn = new Burn(duration, burnType, burnDamage, setter, this);
             board.AddEffect(burn);
             /*Burn = true;
             burnSetterSet = setter;
@@ -786,7 +786,7 @@ namespace TFT_Engine.Components
         {
             if (!ImmuneCC)
             {
-                Stun stun = new((int)(duration * board.defaultTicksPerSec), setter, this);
+                Stun stun = new(duration, setter, this);
                 board.AddEffect(stun);
                 /*Stun = true;
                 Stunner = setter;
@@ -798,7 +798,7 @@ namespace TFT_Engine.Components
         {
             if (!ImmuneCC)
             {
-                Stun stun = new((int) (duration * board.defaultTicksPerSec), setter, this);
+                Stun stun = new(duration, setter, this);
                 board.AddEffect(stun);
                 /*Stun = true;
                 stunnerSet = setter;

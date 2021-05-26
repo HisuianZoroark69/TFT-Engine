@@ -16,6 +16,7 @@ namespace TFT_Engine
         public Character Effected;
         public Set EffectorSet;
         public bool IsLoop;
+        public Position EffectedPosition;
 
         protected Effect(double duration, Character effector, Character effected)
         {
@@ -25,34 +26,48 @@ namespace TFT_Engine
             Effected = effected;
             effected.board.AddRoundEvent(new RoundEvent(effected,EventType.Effects)
             {
-                statusTypeName = GetType().Name,
+                EffectName = GetType().Name,
                 linkedCharacters = new(){effector},
-                statusValue = true
+                EffectValue = true
             });
         }
         protected Effect(double duration, Set effector, Character effected)
         {
+            BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             EffectorSet = effector;
             Effected = effected;
             board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
             {
-                statusTypeName = GetType().Name,
+                EffectName = GetType().Name,
                 linkedSet = effector,
-                statusValue = true
+                EffectValue = true
             });
         }
         protected Effect(double duration, Character effected)
         {
+            BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             Effected = effected;
             board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
             {
-                statusTypeName = GetType().Name,
-                statusValue = true
+                EffectName = GetType().Name,
+                EffectValue = true
             });
         }
 
+        //Board to get default tick
+        protected Effect(double duration, Position pos, Board board)
+        {
+            BaseDuration = duration;
+            DurationCounter = (int)(duration * board.defaultTicksPerSec);
+            EffectedPosition = pos;
+            board.AddRoundEvent(new RoundEvent(pos)
+            {
+                EffectName = GetType().Name,
+                EffectValue = true
+            });
+        }
         public Effect SetLoop(bool loop)
         {
             IsLoop = loop;
@@ -85,16 +100,16 @@ namespace TFT_Engine
             if(Effector != null)
                 board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
-                    statusTypeName = GetType().Name,
+                    EffectName = GetType().Name,
                     linkedCharacters = new() { Effector },
-                    statusValue = false
+                    EffectValue = false
                 });
             else
                 board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
-                    statusTypeName = GetType().Name,
+                    EffectName = GetType().Name,
                     linkedSet = EffectorSet,
-                    statusValue = false
+                    EffectValue = false
                 });
         }
     }
