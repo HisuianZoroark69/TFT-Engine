@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using TFT_Engine;
 using TFT_Engine.Components;
 
 namespace TFT_Engine
@@ -11,20 +13,26 @@ namespace TFT_Engine
         Move,
         SpecialAttack,
         Healing,
-        StatusChanges,
         ManaChange,
         Effects,
         Dead
     }
 
-    public enum StatusType
+    public class RoundEventDictionary : Dictionary<int, List<RoundEvent>>
     {
-        Null,
-        Stun,
-        Sleep,
-        Burn,
-        Blind,
-        Channeling
+        public new List<RoundEvent> this[int t]
+        {
+            get
+            {
+                if (ContainsKey(t))
+                {
+                    return base[t];
+                }
+                return new();
+            }
+            set => base[t] = value;
+            
+        }
     }
 
     public class RoundEvent
@@ -36,7 +44,6 @@ namespace TFT_Engine
         public Position linkedPositions;
         public Set linkedSet;
         public Character main;
-        public StatusType statusType;
         public string statusTypeName;
         public bool statusValue;
         public double value;

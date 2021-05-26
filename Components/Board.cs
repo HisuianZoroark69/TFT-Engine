@@ -72,7 +72,7 @@ namespace TFT_Engine.Components
         public int CurrentTick;
         public int defaultTicksPerSec = 20;
         public List<Position> positionList;
-        public Dictionary<int, List<RoundEvent>> roundLog;
+        public RoundEventDictionary roundLog;
 
         public List<Set> sets;
         public List<Effect> effects = new();
@@ -159,7 +159,7 @@ namespace TFT_Engine.Components
             if (charCounter.Keys.Count < 2) return charCounter.Keys.ToArray()[0];
             TicksPerSecond = tickPerSec; //Set default ticks
             CurrentTick = 0;
-            roundLog = new Dictionary<int, List<RoundEvent>>();
+            roundLog = new();
             CharacterStart?.Invoke();
             SetStartEvent?.Invoke();
             StartEvent?.Invoke();
