@@ -10,13 +10,16 @@ namespace TFT_Engine
     public abstract class Effect
     {
         public int DurationCounter { get; set; }
+        public double BaseDuration;
         public Board board;
         public Character Effector;
         public Character Effected;
         public Set EffectorSet;
+        public bool IsLoop;
 
         protected Effect(double duration, Character effector, Character effected)
         {
+            BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             Effector = effector;
             Effected = effected;
@@ -39,7 +42,22 @@ namespace TFT_Engine
                 statusValue = true
             });
         }
+        protected Effect(double duration, Character effected)
+        {
+            DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
+            Effected = effected;
+            board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
+            {
+                statusTypeName = GetType().Name,
+                statusValue = true
+            });
+        }
 
+        public Effect SetLoop(bool loop)
+        {
+            IsLoop = loop;
+            return this;
+        }
         public void OnTick()
         {
             DurationCounter--;
@@ -58,6 +76,12 @@ namespace TFT_Engine
 
         public virtual void OnElapsed()
         {
+            //Loop
+            if (IsLoop)
+            {
+                DurationCounter = (int)(board.defaultTicksPerSec * BaseDuration);
+                return;
+            }
             if(Effector != null)
                 board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
