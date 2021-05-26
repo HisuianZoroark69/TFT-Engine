@@ -15,9 +15,9 @@ namespace TFT_Engine
         public Character Effected;
         public Set EffectorSet;
 
-        protected Effect(int Duration, Character effector, Character effected)
+        protected Effect(double duration, Character effector, Character effected)
         {
-            DurationCounter = Duration;
+            DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             Effector = effector;
             Effected = effected;
             effected.board.AddRoundEvent(new RoundEvent(effected,EventType.Effects)
@@ -27,9 +27,9 @@ namespace TFT_Engine
                 statusValue = true
             });
         }
-        protected Effect(int Duration, Set effector, Character effected)
+        protected Effect(double duration, Set effector, Character effected)
         {
-            DurationCounter = Duration;
+            DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             EffectorSet = effector;
             Effected = effected;
             board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
