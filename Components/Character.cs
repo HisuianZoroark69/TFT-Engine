@@ -228,7 +228,7 @@ namespace TFT_Engine.Components
             set => sleepDurationCounter = (int) (board.defaultTicksPerSec * value);
         }*/
 
-        public bool Stun
+        /*public bool Stun
         {
             get => _Stun;
             protected set
@@ -241,7 +241,7 @@ namespace TFT_Engine.Components
                     });
                 _Stun = value;
             }
-        }
+        }*/
 
         /*protected float StunDuration
         {
@@ -422,7 +422,7 @@ namespace TFT_Engine.Components
             Moving = false;
             Sleep = false;
             Blind = false;
-            Stun = false;
+            //Stun = false;
             collision = true;
             canBeTargeted = true;
             ImmuneCC = false;
@@ -653,7 +653,7 @@ namespace TFT_Engine.Components
 
         public virtual void OnManaChange(double manaChange)
         {
-            if (mana >= currentStats.maxMana && !Sleep && !Stun)
+            if (mana >= currentStats.maxMana && !Channeling && !(from x in board.effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any())
             {
                 mana = 0;
                 currentStats.maxMana = baseStats.maxMana; //Reset max mana if increased
@@ -738,7 +738,7 @@ namespace TFT_Engine.Components
                     e.Abort();
                 }
             }
-            Stun = false;
+            //Stun = false;
             Sleep = false;
             Blind = false;
             //Burn = false;

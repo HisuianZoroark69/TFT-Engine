@@ -16,7 +16,7 @@
         public double mana;
         public int maxHp;
         public int maxMana;
-        public float movingSpeed = 0.75f;
+        public double movingSpeed = 0.75;
         public double shield;
         public double specialAtkPercentage = 1;
         public int specialDef;
