@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using TFT_Engine.Components;
 
 namespace TFT_Engine
@@ -11,6 +14,7 @@ namespace TFT_Engine
     {
         public int DurationCounter { get; set; }
         public double BaseDuration;
+        public int maxStack; //maxStack = 0 <=> infinite stacks
         public Board board;
         public Character Effector;
         public Character Effected;
@@ -18,8 +22,9 @@ namespace TFT_Engine
         public bool IsLoop;
         public Position EffectedPosition;
 
-        protected Effect(double duration, Character effector, Character effected)
+        protected Effect(double duration, Character effector, Character effected, int stack = 0)
         {
+            maxStack = stack;
             BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             Effector = effector;
@@ -31,8 +36,9 @@ namespace TFT_Engine
                 EffectValue = true
             });
         }
-        protected Effect(double duration, Set effector, Character effected)
+        protected Effect(double duration, Set effector, Character effected, int stack = 0)
         {
+            maxStack = stack;
             BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             EffectorSet = effector;
@@ -44,8 +50,9 @@ namespace TFT_Engine
                 EffectValue = true
             });
         }
-        protected Effect(double duration, Character effected)
+        protected Effect(double duration, Character effected, int stack = 0)
         {
+            maxStack = stack;
             BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             Effected = effected;
@@ -57,8 +64,9 @@ namespace TFT_Engine
         }
 
         //Board to get default tick
-        protected Effect(double duration, Position pos, Board board)
+        protected Effect(double duration, Position pos, Board board, int stack = 0)
         {
+            maxStack = stack;
             BaseDuration = duration;
             DurationCounter = (int)(duration * board.defaultTicksPerSec);
             EffectedPosition = pos;
@@ -82,7 +90,6 @@ namespace TFT_Engine
                 OnElapsed();
             }
         }
-
         public void Abort()
         {
             DurationCounter = 0;

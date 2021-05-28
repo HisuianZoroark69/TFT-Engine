@@ -37,8 +37,7 @@ namespace TFT_Engine.Components
 
         public delegate void ManaChangeEventHandler(double ManaChange);
 
-        
-
+        public bool CCed => (from x in board.effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any();
 
         private Character _attackTarget;
 
@@ -331,10 +330,9 @@ namespace TFT_Engine.Components
         public void OnTick()
         {
             AttackTarget = null;
-            bool cc = (from x in board.effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any();
-            if (cc) Channeling = false;
+            if (CCed) Channeling = false;
             //Check if character is dead or stun or sleep
-            if (!Dead && !cc && !Channeling)
+            if (!Dead && !CCed && !Channeling)
             {
                 //Checking if existing target can be targeted
                 if (AttackTarget is {canBeTargeted: false}) AttackTarget = null;

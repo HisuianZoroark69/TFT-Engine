@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using Timer = System.Timers.Timer;
 
@@ -514,6 +515,8 @@ namespace TFT_Engine.Components
 
         public void AddEffect(Effect e)
         {
+            if (e.maxStack > 0 &&
+                (from x in effects where x.GetType() == e.GetType() select x).Count() > e.maxStack) return;
             e.board = this;
             effects.Add(e);
         }
