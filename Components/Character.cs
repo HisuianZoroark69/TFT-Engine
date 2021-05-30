@@ -220,54 +220,6 @@ namespace TFT_Engine.Components
                 _Sleep = value;
             }
         }
-
-        /*private float SleepDuration
-        {
-            //get => sleepDurationCounter / board.defaultTicksPerSec;
-            set => sleepDurationCounter = (int) (board.defaultTicksPerSec * value);
-        }*/
-
-        /*public bool Stun
-        {
-            get => _Stun;
-            protected set
-            {
-                if (value != _Stun)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
-                    {
-                        EffectName = "Stun",
-                        EffectValue = value
-                    });
-                _Stun = value;
-            }
-        }*/
-
-        /*protected float StunDuration
-        {
-            get => stunDurationCounter / board.defaultTicksPerSec;
-            set => stunDurationCounter = (int) (board.defaultTicksPerSec * value);
-        }*/
-
-        /*public bool Burn
-        {
-            get => _Burn;
-            protected set
-            {
-                if (value != _Burn)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.StatusChanges)
-                    {
-                        statusType = StatusType.Burn,
-                        EffectValue = value
-                    });
-                _Burn = value;
-            }
-        }*/
-
-        /*private float burnDuration
-        {
-            set => burnDurationCounter = (int) (board.defaultTicksPerSec * value);
-        }*/
-
         public bool Blind
         {
             get => _Blind;
@@ -285,7 +237,6 @@ namespace TFT_Engine.Components
 
         private float BlindDuration
         {
-            get => BlindDurationCounter / board.defaultTicksPerSec;
             set => BlindDurationCounter = (int) (board.defaultTicksPerSec * value);
         }
 
@@ -304,11 +255,8 @@ namespace TFT_Engine.Components
             }
         }
 
-        private float ChannelingDuration
+        private double ChannelingDuration
         {
-/*
-            get { return ChannelingDurationCounter / board.defaultTicksPerSec; }
-*/
             set => ChannelingDurationCounter = (int) (board.defaultTicksPerSec * value);
         }
 
@@ -731,7 +679,7 @@ namespace TFT_Engine.Components
         {
             foreach (Effect e in board.effects)
             {
-                if (e is Effects.Stun or Effects.Sleep)
+                if (e is Stun or Effects.Sleep)
                 {
                     e.Abort();
                 }
@@ -755,7 +703,7 @@ namespace TFT_Engine.Components
             }
         }
 
-        public virtual void SetBurn(Character setter, float duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
+        public virtual void SetBurn(Character setter, double duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
         {
             //Burn = true;
             Effect burn = new Burn(duration, burnType, burnDamage, setter, this);
@@ -767,7 +715,7 @@ namespace TFT_Engine.Components
             BonusIntakeDamagePercentage *= 1 + BonusIntakeDamage;
         }
 
-        public virtual void SetBurn(Set setter, float duration, double burnDamage, DamageType burnType,
+        public virtual void SetBurn(Set setter, double duration, double burnDamage, DamageType burnType,
             float BonusIntakeDamage = 0)
         {
             Effect burn = new Burn(duration, burnType, burnDamage, setter, this);
@@ -818,7 +766,7 @@ namespace TFT_Engine.Components
             BlindDuration = duration;
         }
 
-        public virtual void SetChanneling(float duration, Character channelTarget = null)
+        public virtual void SetChanneling(double duration, Character channelTarget = null)
         {
             Channeling = true;
             ChannelingDuration = duration;

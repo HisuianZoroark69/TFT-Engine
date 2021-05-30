@@ -94,6 +94,11 @@ namespace TFT_Engine
         {
             DurationCounter = 0;
         }
+
+        public void Refresh()
+        {
+            DurationCounter = (int)(BaseDuration * board.defaultTicksPerSec);
+        }
         public virtual void OverrideOnTick() { }
 
         public virtual void OnElapsed()
