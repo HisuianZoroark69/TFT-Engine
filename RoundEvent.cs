@@ -13,6 +13,7 @@ namespace TFT_Engine
         Move,
         SpecialAttack,
         Healing,
+        Shield,
         ManaChange,
         Effects,
         PositionEffects,
@@ -55,8 +56,15 @@ namespace TFT_Engine
             eventType = et;
         }
 
-        public RoundEvent(Position pos)
+        public RoundEvent(Character main, Position pos)
         {
+            this.main = main;
+            linkedPositions = pos;
+            eventType = EventType.PositionEffects;
+        }
+        public RoundEvent(Set main, Position pos)
+        {
+            linkedSet = main;
             linkedPositions = pos;
             eventType = EventType.PositionEffects;
         }

@@ -334,7 +334,7 @@ namespace TFT_Engine.Components
             for (var i = 0; i < Neighbor.Length / 2; i++)
             {
                 var next = new Position {x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1]};
-                ret.Add(Characters[next]);
+                if(Characters[next] != null) ret.Add(Characters[next]);
             }
 
             return ret;

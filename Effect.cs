@@ -56,7 +56,7 @@ namespace TFT_Engine
             BaseDuration = duration;
             DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
             Effected = effected;
-            board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
+            effected.board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
             {
                 EffectName = GetType().Name,
                 EffectValue = true
@@ -64,14 +64,30 @@ namespace TFT_Engine
         }
 
         //Board to get default tick
-        protected Effect(double duration, Position pos, Board board, int stack = 0)
+        protected Effect(double duration, Character effector, Position pos, Board board, int stack = 0)
         {
             maxStack = stack;
+            Effector = effector;
             BaseDuration = duration;
             DurationCounter = (int)(duration * board.defaultTicksPerSec);
             EffectedPosition = pos;
-            board.AddRoundEvent(new RoundEvent(pos)
+            board.AddRoundEvent(new RoundEvent(effector, pos)
             {
+                linkedPositions = pos,
+                EffectName = GetType().Name,
+                EffectValue = true
+            });
+        }
+        protected Effect(double duration, Set effector, Position pos, Board board, int stack = 0)
+        {
+            maxStack = stack;
+            EffectorSet = effector;
+            BaseDuration = duration;
+            DurationCounter = (int)(duration * board.defaultTicksPerSec);
+            EffectedPosition = pos;
+            board.AddRoundEvent(new RoundEvent(effector, pos)
+            {
+                linkedPositions = pos,
                 EffectName = GetType().Name,
                 EffectValue = true
             });
@@ -109,20 +125,29 @@ namespace TFT_Engine
                 DurationCounter = (int)(board.defaultTicksPerSec * BaseDuration);
                 return;
             }
-            if(Effector != null)
+            if(Effected != null)
                 board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
                     EffectName = GetType().Name,
                     linkedCharacters = new() { Effector },
                     EffectValue = false
                 });
-            else
+            else if(EffectorSet != null)
                 board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
                     EffectName = GetType().Name,
                     linkedSet = EffectorSet,
                     EffectValue = false
                 });
+            else
+            {
+                board.AddRoundEvent(new RoundEvent(Effector ,EffectedPosition)
+                {
+                    EffectName = GetType().Name,
+                    EffectValue = false
+                });
+            }
+            
         }
     }
 }

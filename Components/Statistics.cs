@@ -17,6 +17,7 @@
         public int maxHp;
         public int maxMana;
         public double movingSpeed = 0.75;
+
         public double shield;
         public double specialAtkPercentage = 1;
         public int specialDef;

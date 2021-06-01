@@ -163,7 +163,7 @@ namespace TFT_Engine.Components
             }
         }
 
-        protected float shieldDuration
+        protected double shieldDuration
         {
             get => shieldDurationCounter / board.defaultTicksPerSec;
             set => shieldDurationCounter = (int) (board.defaultTicksPerSec * value);
@@ -275,6 +275,7 @@ namespace TFT_Engine.Components
         public virtual void OverrideOnTick()
         {
         }
+
         public void OnTick()
         {
             AttackTarget = null;
@@ -303,7 +304,8 @@ namespace TFT_Engine.Components
                 }
 
                 //Attack
-                if (board.Distance(AttackTarget.position, position) <= currentStats.attackRange && ++attackCounter >= TicksPerAttack && TicksPerAttack > 0 && !Moving)
+                if (board.Distance(AttackTarget.position, position) <= currentStats.attackRange &&
+                    ++attackCounter >= TicksPerAttack && TicksPerAttack > 0 && !Moving)
                 {
                     Attack();
                     attackCounter = 0;
@@ -311,27 +313,38 @@ namespace TFT_Engine.Components
             }
 
             //Check shield duration
-            if (--shieldDurationCounter <= 0) currentStats.shield = 0;
-
+            if (shieldDurationCounter > 0)
+            {
+                shieldDurationCounter--;
+                if (shieldDurationCounter == 0)
+                {
+                    currentStats.shield = 0;
+                    board.AddRoundEvent(new RoundEvent(this, EventType.Shield)
+                    {
+                        EffectValue = false,
+                        value = 0
+                    });
+                }
+            }
             /*if (Sleep)
                 if (--sleepDurationCounter <= 0)
                     Sleep = false;*/
 
-            /*if (burnDurationCounter <= 0)
-            {
-                BonusIntakeDamage = 0;
-                BurnSetter = null;
-                burnSetterSet = null;
-                Burn = false;
-            }
-            else
-            {
-                burnDurationCounter--;
-                if (BurnSetter != null) OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
-                if (burnSetterSet != null) OnHit(burnSetterSet, burnDamageType, burnDamageEachSec);
-            }*/
+        /*if (burnDurationCounter <= 0)
+        {
+            BonusIntakeDamage = 0;
+            BurnSetter = null;
+            burnSetterSet = null;
+            Burn = false;
+        }
+        else
+        {
+            burnDurationCounter--;
+            if (BurnSetter != null) OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
+            if (burnSetterSet != null) OnHit(burnSetterSet, burnDamageType, burnDamageEachSec);
+        }*/
 
-            if (DecreasedHealingDurationCounter <= 0) currentStats.decreasedHealing = 0;
+        if (DecreasedHealingDurationCounter <= 0) currentStats.decreasedHealing = 0;
             else --DecreasedHealingDurationCounter;
 
             /*if (stunDurationCounter <= 0) Stun = false;
@@ -655,9 +668,14 @@ namespace TFT_Engine.Components
             items.Remove(item);
         }
 
-        public virtual void AddShield(int amount, float duration)
+        public virtual void AddShield(int amount, double duration)
         {
             currentStats.shield += amount;
+            board.AddRoundEvent(new RoundEvent(this,EventType.Shield)
+            {
+                EffectValue = true,
+                value = amount
+            });
             shieldDuration = duration;
         }
 
@@ -677,9 +695,9 @@ namespace TFT_Engine.Components
 
         public virtual void Cleanse()
         {
-            foreach (Effect e in board.effects)
+            foreach (var e in board.effects)
             {
-                if (e is Stun or Effects.Sleep)
+                if (e is Stun or Effects.Sleep or Burn)
                 {
                     e.Abort();
                 }
