@@ -668,7 +668,7 @@ namespace TFT_Engine.Components
             items.Remove(item);
         }
 
-        public virtual void AddShield(int amount, double duration)
+        public virtual void AddShield(double amount, double duration)
         {
             currentStats.shield += amount;
             board.AddRoundEvent(new RoundEvent(this,EventType.Shield)

@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aether.Physics2D" Version="1.5.0" />
   </ItemGroup>
 
 </Project>
