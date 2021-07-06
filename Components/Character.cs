@@ -669,7 +669,7 @@ namespace TFT_Engine.Components
             Items.Remove(item);
         }
 
-        public virtual void AddShield(int amount, double duration)
+        public virtual void AddShield(double amount, double duration)
         {
             CurrentStats.Shield += amount;
             Board.AddRoundEvent(new RoundEvent(this, EventType.Shield)

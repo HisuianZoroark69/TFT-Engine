@@ -36,28 +36,39 @@ namespace TFT_Engine.Components
         public void Add(T obj, int priority)
         {
             Node<T> ptr = head;
+            Node<T> target = new() { value = obj, priority = priority };
             if (head == null)
             {
-                head = new Node<T> { value = obj, priority = priority };
+                head = target;
                 return;
             }
-            do
+            else
             {
-                if (ptr.priority > priority)
+                if (priority < head.priority)
                 {
-                    var target = new Node<T> { value = obj, priority = priority};
-                    target.NextNode = ptr;
-                    ptr.PrevNode.NextNode = target;
-                    target.PrevNode = ptr.PrevNode;
+                    target.NextNode = head;
+                    head = target;
                 }
-                ptr = ptr.NextNode;
-            } while (ptr != null);
+                else
+                {
+                    while (ptr.NextNode != null)
+                    {
+                        if (ptr.NextNode.priority > priority)
+                        {
+                            target.NextNode = ptr.NextNode;
+                            ptr.NextNode = target;
+                            break;
+                        }
+                        ptr = ptr.NextNode;
+                    }
+                }
+            }
         }
         public T Pop()
         {
             var tmp = head;
             head = head.NextNode;
-            head.PrevNode = null;
+            if(head != null) head.PrevNode = null;
             return tmp.value;
         }
         public T Peek()
@@ -149,7 +160,7 @@ namespace TFT_Engine.Components
         /// <param name="type">The shape of the board</param>
         /// <param name="height">The height of the board</param>
         /// <param name="width">The width of the board</param>
-        public Board(BoardType type, int width, int height, int tileSize = 100, int characterSize = 60, bool border = true, params Set[] s)
+        public Board(BoardType type, int width, int height,  bool border = true, params Set[] s)
         {
             _timer.Elapsed += (o, e) => TickEvent?.Invoke();
             this._width = width;
@@ -165,9 +176,6 @@ namespace TFT_Engine.Components
                 set.Board = this;
             }
 
-
-            TileSize = tileSize;
-            CharacterSize = characterSize;
             PositionList = GetPositionList().ToList();
         }
 

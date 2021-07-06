@@ -3,11 +3,20 @@
     public class Item
     {
         public Character Holder;
-        public int id;
-        public string name;
-
+        public int Id;
+        public string Name;
+        public Item(string name, int id)
+        {
+            this.Name = name;
+            this.Id = id;
+        }
+        public virtual void BaseStatsChanges(Statistics stats)
+        {
+            
+        }
         public virtual void OnStart()
         {
+            BaseStatsChanges(Holder.CurrentStats);
         }
 
         public virtual void OnTick()

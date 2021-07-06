@@ -20,10 +20,10 @@ namespace TFT_Engine.Effects
 
         public override void OverrideOnTick()
         {
-            if (board.roundLog.ContainsKey(board.CurrentTick))
-                foreach (RoundEvent re in new List<RoundEvent>(board.roundLog[board.CurrentTick]))
+            if (Board.RoundLog.ContainsKey(Board.CurrentTick))
+                foreach (RoundEvent re in new List<RoundEvent>(Board.RoundLog[Board.CurrentTick]))
                 {
-                    if (re.eventType == EventType.Hitted && re.main == Effected)
+                    if (re.EventType == EventType.Hitted && re.Main == Effected)
                     {
                         //Apply wakeup damage and wake up when hit
                         if (Effector != null) Effected.OnHit(Effector, DamageType.Magic, false, false, WakeupDamage);

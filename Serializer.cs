@@ -46,7 +46,7 @@ namespace TFT_Engine
                 CharInfoTemp.Add(new CharInfo
                 {
                     Name = character.Name,
-                    TeamID = character.teamID.ToString(),
+                    TeamID = character.TeamId.ToString(),
                     HashCode = character.GetHashCode().ToString()
                 });
 
@@ -64,7 +64,7 @@ namespace TFT_Engine
                 StatInfoTemp.Add(new StatInfo
                 {
                     CharacterHashCode = new Element<string> { value = character.GetHashCode().ToString() },
-                    stats = character.currentStats
+                    stats = character.CurrentStats
                 });
 
             XmlSerializer xs = new(typeof(StatInfoWrapper));
