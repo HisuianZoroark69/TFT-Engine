@@ -15,6 +15,20 @@ namespace TFT_Engine.Components
     class PriorityQueue<T>
     {
         Node<T> head;
+        public int Count
+        {
+            get
+            {
+                int c = 0;
+                var ptr = head;
+                while(ptr != null)
+                {
+                    c++;
+                    ptr = ptr.NextNode;
+                }
+                return c;
+            }
+        }
         public Node<T> GetHead()
         {
             return head;
@@ -289,17 +303,16 @@ namespace TFT_Engine.Components
         {
             Dictionary<Position, Position> cameFrom = new();
             Dictionary<Position, int> costSoFar = new();
-            List<(int, Position)> frontier = new();
+            PriorityQueue<Position> frontier = new();
             int[,] neighbor;
             if (_shape == BoardType.Hexagon) neighbor = _hexagonNeighbor;
             else neighbor = _rectangleNeighbor;
-            frontier.Add((0, start));
+            frontier.Add(start,0);
             cameFrom.Add(start, start);
             costSoFar.Add(start, 0);
             while (frontier.Count > 0)
             {
-                var current = frontier.ElementAt(0).Item2;
-                frontier.Remove(frontier.ElementAt(0));
+                var current = frontier.Pop();
 
                 if (current.Equals(end))
                 {
@@ -328,7 +341,7 @@ namespace TFT_Engine.Components
                     {
                         if (t.Contains(end))
                         {
-                            frontier.Add((0, end));
+                            frontier.Add(end,0);
                             cameFrom[end] = current;
                             break;
                         }
@@ -352,12 +365,12 @@ namespace TFT_Engine.Components
                     {
                         costSoFar[next] = newCost;
                         var priority = newCost + Distance(next, end);
-                        frontier.Add((priority, next));
+                        frontier.Add(next,priority);
                         cameFrom[next] = current;
                     }
                 }
 
-                frontier = (from x in frontier orderby x.Item1 select x).ToList();
+                //frontier = (from x in frontier orderby x.Item1 select x).ToList();
             }
 
             return new List<Position>();
