@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using TFT_Engine;
 using TFT_Engine.Components;
 
 namespace TFT_Engine
@@ -33,40 +31,40 @@ namespace TFT_Engine
                 return new();
             }
             set => base[t] = value;
-            
+
         }
     }
 
     public class RoundEvent
     {
-        public DamageType damageType;
-        public EventType eventType;
-        public bool isCrit = false;
-        public CharList linkedCharacters;
-        public Position linkedPositions;
-        public Set linkedSet;
-        public Character main;
+        public DamageType DamageType;
+        public EventType EventType;
+        public bool IsCrit = false;
+        public CharList LinkedCharacters;
+        public Position LinkedPositions;
+        public Set LinkedSet;
+        public Character Main;
         public string EffectName;
         public bool EffectValue;
-        public double value;
+        public double Value;
 
         public RoundEvent(Character main, EventType et)
         {
-            this.main = main;
-            eventType = et;
+            Main = main;
+            EventType = et;
         }
 
         public RoundEvent(Character main, Position pos)
         {
-            this.main = main;
-            linkedPositions = pos;
-            eventType = EventType.PositionEffects;
+            this.Main = main;
+            LinkedPositions = pos;
+            EventType = EventType.PositionEffects;
         }
         public RoundEvent(Set main, Position pos)
         {
-            linkedSet = main;
-            linkedPositions = pos;
-            eventType = EventType.PositionEffects;
+            LinkedSet = main;
+            LinkedPositions = pos;
+            EventType = EventType.PositionEffects;
         }
 
         public RoundEvent()

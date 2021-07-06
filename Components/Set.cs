@@ -5,9 +5,9 @@ namespace TFT_Engine.Components
 {
     public class Set
     {
-        public Board board;
-        public Dictionary<Guid, List<Character>> characterWithType = new();
-        public int id;
+        public Board Board;
+        public Dictionary<Guid, List<Character>> CharacterWithType = new();
+        public int Id;
         public string Name;
 
         public Set(string Name)

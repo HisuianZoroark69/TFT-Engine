@@ -25,49 +25,49 @@ namespace TFT_Engine.Components
         public Character this[Character c] => Find(x => x == c);
 
         public Character this[Position p, bool collision = true] =>
-            Find(x => x.position == p && collision == x.collision);
+            Find(x => x.Position == p && collision == x.Collision);
 
-        public CharList this[Guid teamId] => FindAll(x => x.teamID == teamId) as CharList;
+        public CharList this[Guid teamId] => FindAll(x => x.TeamId == teamId) as CharList;
     }
 
     public class Character
     {
-        public delegate void HitEventHandler(Character Attacker, DamageType damageType, bool isSpecial = false,
+        public delegate void HitEventHandler(Character attacker, DamageType damageType, bool isSpecial = false,
             bool isCrit = false, double amount = 0);
 
-        public delegate void ManaChangeEventHandler(double ManaChange);
+        public delegate void ManaChangeEventHandler(double manaChange);
 
-        public bool CCed => (from x in board.effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any();
+        public bool CCed => (from x in Board.Effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any();
 
         private Character _attackTarget;
 
         //Blind
-        private bool _Blind;
+        private bool _blind;
 
         //Burn
         //private bool _Burn;
 
-        private bool _Channeling;
+        private bool _channeling;
 
-        protected double _mana;
+        protected double mana;
         private double _oldMana;
 
 
         /// <summary>
         ///     Set to sleep and wakeup damage
         /// </summary>
-        private bool _Sleep;
+        private bool _sleep;
 
         //Stun
-        private bool _Stun;
+        private bool _stun;
 
-        private int attackCounter;
-        public Position basePosition;
-        public Statistics baseStats;
-        private int BlindDurationCounter;
-        private Character BlindSetter;
-        private Set blindSetterSet;
-        public Board board;
+        private int _attackCounter;
+        public Position BasePosition;
+        public Statistics BaseStats;
+        private int _blindDurationCounter;
+        private Character _blindSetter;
+        private Set _blindSetterSet;
+        public Board Board;
         public float BonusIntakeDamage;
         public float BonusIntakeDamagePercentage;
         //protected double burnDamageEachSec;
@@ -75,68 +75,61 @@ namespace TFT_Engine.Components
         //protected int burnDurationCounter;
         //protected Character BurnSetter;
         //protected Set burnSetterSet;
-        public bool canBeTargeted;
-        private int ChannelingDurationCounter;
-        protected Character channelTarget;
-        public bool collision;
-        public int cost;
-        public Statistics currentStats;
+        public bool CanBeTargeted;
+        private int _channelingDurationCounter;
+        protected Character ChannelTarget;
+        public bool Collision;
+        public int Cost;
+        public Statistics CurrentStats;
         protected bool Dead;
-        private int DecreasedHealingDurationCounter;
-        public float defaultBonusCritDamage = 0.5f;
+        private int _decreasedHealingDurationCounter;
+        public float DefaultBonusCritDamage = 0.5f;
         public int FamilyId;
 
-        private int GraduallyHealAmountPerTick;
-        private int GraduallyHealDurationCounter;
-        public bool ImmuneCC;
-        public List<Item> items;
-        private byte moveCounter;
+        private int _graduallyHealAmountPerTick;
+        private int _graduallyHealDurationCounter;
+        public bool ImmuneCc;
+        public List<Item> Items;
+        private byte _moveCounter;
 
-        private bool Moving;
+        private bool _moving;
 
         public string Name;
 
         private Position _position;
-        public Position position
+        public Position Position
         {
             get => _position;
             set
             {
                 _position = value;
-                board.AddRoundEvent(new RoundEvent(this, EventType.Move)
+                Board.AddRoundEvent(new RoundEvent(this, EventType.Move)
                 {
-                    linkedPositions = value
+                    LinkedPositions = value
                 });
             }
         }
 
-        public Random rand = new();
-        public List<Set> set;
-        protected int shieldDurationCounter;
-        //private int sleepDurationCounter;
-        //private Character SleepSetter;
-        //private Set sleepSetterSet;
-        //private double sleepWakeupDamage;
+        public Random Rand = new();
+        public List<Set> Set;
+        protected int ShieldDurationCounter;
         public HashSet<Character> SpecialAttackAffected;
-        public int star;
-        //private int stunDurationCounter;
-        //private Character Stunner;
-        //private Set stunnerSet;
-        public Guid teamID;
+        public int Star;
+        public Guid TeamId;
 
         public Character(string name, Guid teamId, Statistics baseStats, int familyId, int star, int cost,
             params Set[] s)
         {
-            this.star = star;
-            this.cost = cost;
+            Star = star;
+            Cost = cost;
             FamilyId = familyId;
             Name = name;
-            teamID = teamId;
-            this.baseStats = baseStats;
+            TeamId = teamId;
+            BaseStats = baseStats;
             HitEvent += OnHit;
             ManaChangeEvent += OnManaChange;
-            items = new List<Item>();
-            set = new List<Set>(s);
+            Items = new List<Item>();
+            Set = new List<Set>(s);
         }
 
         public Character AttackTarget
@@ -148,10 +141,10 @@ namespace TFT_Engine.Components
                 if (value == null)
                 {
                     var minDistance = int.MaxValue;
-                    foreach (var c in board.Characters)
+                    foreach (var c in Board.Characters)
                     {
-                        var distance = board.Distance(c.position, position);
-                        if (c.canBeTargeted && !c.Dead && c.teamID != teamID && distance < minDistance)
+                        var distance = Board.Distance(c.Position, Position);
+                        if (c.CanBeTargeted && !c.Dead && c.TeamId != TeamId && distance < minDistance)
                         {
                             _attackTarget = c;
                             minDistance = distance;
@@ -160,28 +153,33 @@ namespace TFT_Engine.Components
 
                     OnFindNewTarget();
                 }
+                else
+                {
+                    _attackTarget = value;
+                    OnFindNewTarget();
+                }
             }
         }
 
-        protected double shieldDuration
+        protected double ShieldDuration
         {
-            get => shieldDurationCounter / board.defaultTicksPerSec;
-            set => shieldDurationCounter = (int) (board.defaultTicksPerSec * value);
+            get => ShieldDurationCounter / Board.DefaultTicksPerSec;
+            set => ShieldDurationCounter = (int)(Board.DefaultTicksPerSec * value);
         }
 
-        public double mana
+        public double Mana
         {
-            get => _mana;
+            get => _oldMana;
             set
             {
                 if (!Channeling)
                 {
-                    currentStats.mana = value;
-                    board.AddRoundEvent(new RoundEvent(this, EventType.ManaChange)
+                    CurrentStats.Mana = value;
+                    Board.AddRoundEvent(new RoundEvent(this, EventType.ManaChange)
                     {
-                        value = value - _mana
+                        Value = value - _oldMana
                     });
-                    _mana = value;
+                    _oldMana = value;
                     ManaChangeEvent?.Invoke(value - _oldMana);
                     _oldMana = value;
                 }
@@ -194,7 +192,7 @@ namespace TFT_Engine.Components
             {
                 try
                 {
-                    return (int) (board.defaultTicksPerSec / currentStats.attackSpeed);
+                    return (int)(Board.DefaultTicksPerSec / CurrentStats.AttackSpeed);
                 }
                 catch (DivideByZeroException)
                 {
@@ -203,71 +201,74 @@ namespace TFT_Engine.Components
             }
         }
 
-        private int movingSpeed => (int) (board.defaultTicksPerSec * currentStats.movingSpeed);
+        private int MovingSpeed => (int)(Board.DefaultTicksPerSec * CurrentStats.MovingSpeed);
 
         public bool Sleep
         {
-            get => _Sleep;
+            get => _sleep;
             protected set
             {
-                if (value != _Sleep)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
+                if (value != _sleep)
+                    Board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
                         EffectName = "Sleep",
                         EffectValue = value
                     });
 
-                _Sleep = value;
+                _sleep = value;
             }
         }
         public bool Blind
         {
-            get => _Blind;
+            get => _blind;
             protected set
             {
-                if (value != _Blind)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
+                if (value != _blind)
+                    Board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
                         EffectName = "Blind",
                         EffectValue = value
                     });
-                _Blind = value;
+                _blind = value;
             }
         }
 
         private float BlindDuration
         {
-            set => BlindDurationCounter = (int) (board.defaultTicksPerSec * value);
+            set => _blindDurationCounter = (int)(Board.DefaultTicksPerSec * value);
         }
 
         public bool Channeling
         {
-            get => _Channeling;
+            get => _channeling;
             protected set
             {
-                if (value != _Channeling)
-                    board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
+                if (value != _channeling)
+                    Board.AddRoundEvent(new RoundEvent(this, EventType.Effects)
                     {
                         EffectName = "Channeling",
                         EffectValue = value
                     });
-                _Channeling = value;
+                _channeling = value;
             }
         }
 
         private double ChannelingDuration
         {
-            set => ChannelingDurationCounter = (int) (board.defaultTicksPerSec * value);
+            set => _channelingDurationCounter = (int)(Board.DefaultTicksPerSec * value);
         }
 
         private float GraduallyHealDuration
         {
             //get { return GraduallyHealDurationCounter / board.defaultTicksPerSec; }
-            set => GraduallyHealDurationCounter = (int) (board.defaultTicksPerSec * value);
+            set => _graduallyHealDurationCounter = (int)(Board.DefaultTicksPerSec * value);
         }
 
         public event HitEventHandler HitEvent;
         public event ManaChangeEventHandler ManaChangeEvent;
+
+        //Physics things
+
 
         /// <summary>
         ///     This runs every ticks
@@ -284,45 +285,45 @@ namespace TFT_Engine.Components
             if (!Dead && !CCed && !Channeling)
             {
                 //Checking if existing target can be targeted
-                if (AttackTarget is {canBeTargeted: false}) AttackTarget = null;
+                if (AttackTarget is { CanBeTargeted: false }) AttackTarget = null;
                 //Move to target if outside of attack range
-                if (board.Distance(AttackTarget.position, position) > currentStats.attackRange && !Moving)
+                if (Board.Distance(AttackTarget.Position, Position) > CurrentStats.AttackRange && !_moving)
                 {
                     Move();
-                    Moving = true;
-                    moveCounter = 0;
+                    _moving = true;
+                    _moveCounter = 0;
                 }
 
-                if (Moving)
+                if (_moving)
                 {
-                    moveCounter++;
-                    if (moveCounter >= movingSpeed)
+                    _moveCounter++;
+                    if (_moveCounter >= MovingSpeed)
                     {
-                        moveCounter = 0;
-                        Moving = false;
+                        _moveCounter = 0;
+                        _moving = false;
                     }
                 }
 
                 //Attack
-                if (board.Distance(AttackTarget.position, position) <= currentStats.attackRange &&
-                    ++attackCounter >= TicksPerAttack && TicksPerAttack > 0 && !Moving)
+                if (Board.Distance(AttackTarget.Position, Position) <= CurrentStats.AttackRange &&
+                    ++_attackCounter >= TicksPerAttack && TicksPerAttack > 0 && !_moving)
                 {
                     Attack();
-                    attackCounter = 0;
+                    _attackCounter = 0;
                 }
             }
 
             //Check shield duration
-            if (shieldDurationCounter > 0)
+            if (ShieldDurationCounter > 0)
             {
-                shieldDurationCounter--;
-                if (shieldDurationCounter == 0)
+                ShieldDurationCounter--;
+                if (ShieldDurationCounter == 0)
                 {
-                    currentStats.shield = 0;
-                    board.AddRoundEvent(new RoundEvent(this, EventType.Shield)
+                    CurrentStats.Shield = 0;
+                    Board.AddRoundEvent(new RoundEvent(this, EventType.Shield)
                     {
                         EffectValue = false,
-                        value = 0
+                        Value = 0
                     });
                 }
             }
@@ -330,41 +331,41 @@ namespace TFT_Engine.Components
                 if (--sleepDurationCounter <= 0)
                     Sleep = false;*/
 
-        /*if (burnDurationCounter <= 0)
-        {
-            BonusIntakeDamage = 0;
-            BurnSetter = null;
-            burnSetterSet = null;
-            Burn = false;
-        }
-        else
-        {
-            burnDurationCounter--;
-            if (BurnSetter != null) OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
-            if (burnSetterSet != null) OnHit(burnSetterSet, burnDamageType, burnDamageEachSec);
-        }*/
+            /*if (burnDurationCounter <= 0)
+            {
+                BonusIntakeDamage = 0;
+                BurnSetter = null;
+                burnSetterSet = null;
+                Burn = false;
+            }
+            else
+            {
+                burnDurationCounter--;
+                if (BurnSetter != null) OnHit(BurnSetter, burnDamageType, false, false, burnDamageEachSec);
+                if (burnSetterSet != null) OnHit(burnSetterSet, burnDamageType, burnDamageEachSec);
+            }*/
 
-        if (DecreasedHealingDurationCounter <= 0) currentStats.decreasedHealing = 0;
-            else --DecreasedHealingDurationCounter;
+            if (_decreasedHealingDurationCounter <= 0) CurrentStats.DecreasedHealing = 0;
+            else --_decreasedHealingDurationCounter;
 
             /*if (stunDurationCounter <= 0) Stun = false;
             else stunDurationCounter--;*/
 
-            if (ChannelingDurationCounter > 0 && Channeling)
+            if (_channelingDurationCounter > 0 && Channeling)
             {
-                ChannelingDurationCounter--;
-                if (channelTarget != null && !board.Characters.Contains(channelTarget))
-                    ChannelingDurationCounter = 0;
-                if (ChannelingDurationCounter == 0) 
+                _channelingDurationCounter--;
+                if (ChannelTarget != null && !Board.Characters.Contains(ChannelTarget))
+                    _channelingDurationCounter = 0;
+                if (_channelingDurationCounter == 0)
                     Channeling = false;
             }
 
-            if (BlindDurationCounter <= 0) Blind = false;
-            else BlindDurationCounter--;
-            if (GraduallyHealDurationCounter > 0)
+            if (_blindDurationCounter <= 0) Blind = false;
+            else _blindDurationCounter--;
+            if (_graduallyHealDurationCounter > 0)
             {
-                GraduallyHealDurationCounter--;
-                Heal(GraduallyHealAmountPerTick);
+                _graduallyHealDurationCounter--;
+                Heal(_graduallyHealAmountPerTick);
             }
             OverrideOnTick();
         }
@@ -375,84 +376,84 @@ namespace TFT_Engine.Components
 
         public virtual void OnStart()
         {
-            position = basePosition;
+            Position = BasePosition;
             SpecialAttackAffected = new HashSet<Character>();
             Dead = false;
-            Moving = false;
+            _moving = false;
             Sleep = false;
             Blind = false;
             //Stun = false;
-            collision = true;
-            canBeTargeted = true;
-            ImmuneCC = false;
-            attackCounter = 0;
+            Collision = true;
+            CanBeTargeted = true;
+            ImmuneCc = false;
+            _attackCounter = 0;
             BonusIntakeDamage = 0;
             BonusIntakeDamagePercentage = 1;
-            currentStats = baseStats;
-            currentStats.hp = currentStats.maxHp;
+            CurrentStats = BaseStats;
+            CurrentStats.Hp = CurrentStats.MaxHp;
         }
 
         public virtual void Move()
         {
-            position = board.PathFinding(position, AttackTarget.position)[1];
+            Position = Board.PathFinding(Position, AttackTarget.Position)[1];
         }
 
         public virtual void Attack()
         {
             if (!Blind)
             {
-                var crit = rand.Next(1, 100) <= currentStats.critRate;
+                var crit = Rand.Next(1, 100) <= CurrentStats.CritRate;
                 AttackTarget?.HitEvent.Invoke(this, DamageType.Physical, false, crit);
-                board.AddRoundEvent(new RoundEvent(this, EventType.BasicAttack)
+                Board.AddRoundEvent(new RoundEvent(this, EventType.BasicAttack)
                 {
-                    linkedCharacters = new CharList {AttackTarget},
-                    isCrit = crit
+                    LinkedCharacters = new CharList { AttackTarget },
+                    IsCrit = crit
                 });
             }
 
-            foreach (var i in items) i.OnAttack(AttackTarget);
+            foreach (var i in Items) i.OnAttack(AttackTarget);
             mana += 10;
         }
 
-        public virtual double PhysicalDamageCalculation(Character Attacker, double amount)
+        public virtual double PhysicalDamageCalculation(Character attacker, double amount)
         {
-            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def);
-            foreach (var i in items) damage = i.OnDamageCalculation(damage);
+            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + CurrentStats.Def);
+            foreach (var i in Items) damage = i.OnDamageCalculation(damage);
             return damage;
         }
 
-        public virtual double MagicDamageCalculation(Character Attacker, double amount)
+        public virtual double MagicDamageCalculation(Character attacker, double amount)
         {
             var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 /
-                         (100 + currentStats.specialDef);
-            foreach (var i in items) damage = i.OnMagicDamageCalculation(damage);
+                         (100 + CurrentStats.SpecialDef);
+            foreach (var i in Items) damage = i.OnMagicDamageCalculation(damage);
             return damage;
         }
 
-        public virtual double PhysicalDamageCalculation(Set Attacker, double amount)
+        public virtual double PhysicalDamageCalculation(Set attacker, double amount)
         {
-            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def);
-            foreach (var i in items) damage = i.OnDamageCalculation(damage);
+            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + CurrentStats.Def);
+            foreach (var i in Items) damage = i.OnDamageCalculation(damage);
             return damage;
         }
 
-        public virtual double MagicDamageCalculation(Set Attacker, double amount)
+        public virtual double MagicDamageCalculation(Set attacker, double amount)
         {
             var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 /
-                         (100 + currentStats.specialDef);
-            foreach (var i in items) damage = i.OnMagicDamageCalculation(damage);
+                         (100 + CurrentStats.SpecialDef);
+            foreach (var i in Items) damage = i.OnMagicDamageCalculation(damage);
             return damage;
         }
         public virtual double PhysicalDamageCalculation(double amount)
         {
-            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + currentStats.def);
+            var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 / (100 + CurrentStats.Def);
             return damage;
         }
 
         public virtual double MagicDamageCalculation(double amount)
         {
             var damage = (amount + BonusIntakeDamage) * BonusIntakeDamagePercentage * 100 /
-                         (100 + currentStats.specialDef);
+                         (100 + CurrentStats.SpecialDef);
             return damage;
         }
 
@@ -465,8 +466,8 @@ namespace TFT_Engine.Components
             //Basic attack
             if (damageType == DamageType.Physical && !isSpecial)
             {
-                if (!(rand.Next(1, 100) <= currentStats.dodgeRate))
-                    damage = PhysicalDamageCalculation(attacker, attacker.currentStats.atk);
+                if (!(Rand.Next(1, 100) <= CurrentStats.DodgeRate))
+                    damage = PhysicalDamageCalculation(attacker, attacker.CurrentStats.Atk);
             }
             //Other
             else if (damageType == DamageType.Physical)
@@ -480,18 +481,18 @@ namespace TFT_Engine.Components
             }
             else if (damageType == DamageType.True)
             {
-                damage = amount != 0 ? amount : attacker.currentStats.atk;
+                damage = amount != 0 ? amount : attacker.CurrentStats.Atk;
             }
 
             //Check if this is a critical hit
-            if (isCrit) damage = damage * (1 + defaultBonusCritDamage);
+            if (isCrit) damage = damage * (1 + DefaultBonusCritDamage);
 
-            board.AddRoundEvent(new RoundEvent(this, EventType.Hitted)
+            Board.AddRoundEvent(new RoundEvent(this, EventType.Hitted)
             {
-                damageType = damageType,
-                value = damage,
-                isCrit = isCrit,
-                linkedCharacters = new CharList {attacker}
+                DamageType = damageType,
+                Value = damage,
+                IsCrit = isCrit,
+                LinkedCharacters = new CharList { attacker }
             });
 
             //Check sleep wakeup
@@ -502,35 +503,35 @@ namespace TFT_Engine.Components
             }*/
 
             //Decreasing HP
-            if (currentStats.shield > damage)
+            if (CurrentStats.Shield > damage)
             {
-                currentStats.shield -= damage;
+                CurrentStats.Shield -= damage;
             }
             else
             {
-                currentStats.hp -= damage - currentStats.shield;
-                currentStats.shield = 0;
+                CurrentStats.Hp -= damage - CurrentStats.Shield;
+                CurrentStats.Shield = 0;
             }
 
             ;
 
             //Checking if the character is dead
             //The first conditions bracket can be used to revive the character
-            if (currentStats.hp <= 0 && !Dead) OnKilled(attacker);
+            if (CurrentStats.Hp <= 0 && !Dead) OnKilled(attacker);
             //If the character isn't revived then it is dead :D
-            if (currentStats.hp <= 0 && !Dead)
+            if (CurrentStats.Hp <= 0 && !Dead)
             {
                 Dead = true;
-                board.AddRoundEvent(new RoundEvent(this, EventType.Dead));
-                board.charCounter[teamID]--;
-                board.Characters.Remove(this);
-                foreach (var c in board.Characters.Where(x => x.AttackTarget == this)) c.AttackTarget = null;
+                Board.AddRoundEvent(new RoundEvent(this, EventType.Dead));
+                Board.CharCounter[TeamId]--;
+                Board.Characters.Remove(this);
+                foreach (var c in Board.Characters.Where(x => x.AttackTarget == this)) c.AttackTarget = null;
                 return;
             }
 
             //Adding intake damage mana
             if (damageType == DamageType.Physical && !isSpecial)
-                mana += attacker.currentStats.atk / 100d + damage * 7d / 100d;
+                mana += attacker.CurrentStats.Atk / 100d + damage * 7d / 100d;
             else mana += amount / 100d + damage * 7d / 100d;
         }
 
@@ -543,7 +544,7 @@ namespace TFT_Engine.Components
             //Basic attack
             if (damageType == DamageType.Physical && !isSpecial)
             {
-                if (!(rand.Next(1, 100) <= currentStats.dodgeRate))
+                if (!(Rand.Next(1, 100) <= CurrentStats.DodgeRate))
                     damage = PhysicalDamageCalculation(attacker, amount);
             }
             //Other
@@ -562,14 +563,14 @@ namespace TFT_Engine.Components
             }
 
             //Check if this is a critical hit
-            if (isCrit) damage = damage * (1 + defaultBonusCritDamage);
+            if (isCrit) damage = damage * (1 + DefaultBonusCritDamage);
 
-            board.AddRoundEvent(new RoundEvent(this, EventType.Hitted)
+            Board.AddRoundEvent(new RoundEvent(this, EventType.Hitted)
             {
-                damageType = damageType,
-                value = damage,
-                isCrit = isCrit,
-                linkedSet = attacker
+                DamageType = damageType,
+                Value = damage,
+                IsCrit = isCrit,
+                LinkedSet = attacker
             });
 
             //Check sleep wakeup
@@ -580,29 +581,29 @@ namespace TFT_Engine.Components
             }*/
 
             //Decreasing HP
-            if (currentStats.shield > damage)
+            if (CurrentStats.Shield > damage)
             {
-                currentStats.shield -= damage;
+                CurrentStats.Shield -= damage;
             }
             else
             {
-                currentStats.hp -= damage - currentStats.shield;
-                currentStats.shield = 0;
+                CurrentStats.Hp -= damage - CurrentStats.Shield;
+                CurrentStats.Shield = 0;
             }
 
             ;
 
             //Checking if the character is dead
             //The first conditions bracket can be used to revive the character
-            if (currentStats.hp <= 0 && !Dead) OnKilled(attacker);
+            if (CurrentStats.Hp <= 0 && !Dead) OnKilled(attacker);
             //If the character isn't revived then it is dead :D
-            if (currentStats.hp <= 0 && !Dead)
+            if (CurrentStats.Hp <= 0 && !Dead)
             {
                 Dead = true;
-                board.AddRoundEvent(new RoundEvent(this, EventType.Dead));
-                board.charCounter[teamID]--;
-                board.Characters.Remove(this);
-                foreach (var c in board.Characters.Where(x => x.AttackTarget == this)) c.AttackTarget = null;
+                Board.AddRoundEvent(new RoundEvent(this, EventType.Dead));
+                Board.CharCounter[TeamId]--;
+                Board.Characters.Remove(this);
+                foreach (var c in Board.Characters.Where(x => x.AttackTarget == this)) c.AttackTarget = null;
                 return;
             }
 
@@ -612,10 +613,10 @@ namespace TFT_Engine.Components
 
         public virtual void OnManaChange(double manaChange)
         {
-            if (mana >= currentStats.maxMana && !Channeling && !(from x in board.effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any())
+            if (mana >= CurrentStats.MaxMana && !Channeling && !(from x in Board.Effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any())
             {
                 mana = 0;
-                currentStats.maxMana = baseStats.maxMana; //Reset max mana if increased
+                CurrentStats.MaxMana = BaseStats.MaxMana; //Reset max mana if increased
                 BaseSpecialMove();
             }
         }
@@ -627,75 +628,75 @@ namespace TFT_Engine.Components
         public void BaseSpecialMove()
         {
             SpecialAttackAffected.Clear();
-            foreach (var i in items) i.OnSpecialMove();
-            board.AddRoundEvent(new RoundEvent(this, EventType.SpecialAttack));
+            foreach (var i in Items) i.OnSpecialMove();
+            Board.AddRoundEvent(new RoundEvent(this, EventType.SpecialAttack));
             SpecialMove();
         }
 
-        public virtual void OnKilled(Character Killer)
+        public virtual void OnKilled(Character killer)
         {
         }
 
-        public virtual void OnKilled(Set Killer)
+        public virtual void OnKilled(Set killer)
         {
         }
 
-        public virtual void OnProjectileHit(Character Hitted)
+        public virtual void OnProjectileHit(Character hitted)
         {
         }
 
         public virtual void AddItem(Item item)
         {
-            board.TickEvent += item.OnTick;
-            board.StartEvent += item.OnStart;
-            board.EndEvent += item.OnEnd;
+            Board.TickEvent += item.OnTick;
+            Board.StartEvent += item.OnStart;
+            Board.EndEvent += item.OnEnd;
             HitEvent += item.OnHit;
             ManaChangeEvent += item.OnManaChange;
 
             item.Holder = this;
-            items.Add(item);
+            Items.Add(item);
         }
 
         public virtual void RemoveItem(Item item)
         {
-            board.TickEvent -= item.OnTick;
-            board.StartEvent -= item.OnStart;
-            board.EndEvent -= item.OnEnd;
+            Board.TickEvent -= item.OnTick;
+            Board.StartEvent -= item.OnStart;
+            Board.EndEvent -= item.OnEnd;
             HitEvent -= item.OnHit;
             ManaChangeEvent -= item.OnManaChange;
 
             item.Holder = null;
-            items.Remove(item);
+            Items.Remove(item);
         }
 
         public virtual void AddShield(int amount, double duration)
         {
-            currentStats.shield += amount;
-            board.AddRoundEvent(new RoundEvent(this,EventType.Shield)
+            CurrentStats.Shield += amount;
+            Board.AddRoundEvent(new RoundEvent(this, EventType.Shield)
             {
                 EffectValue = true,
-                value = amount
+                Value = amount
             });
-            shieldDuration = duration;
+            ShieldDuration = duration;
         }
 
         public virtual void Heal(double amount)
         {
-            board.AddRoundEvent(new RoundEvent(this, EventType.Healing)
+            Board.AddRoundEvent(new RoundEvent(this, EventType.Healing)
             {
-                value = amount
+                Value = amount
             });
         }
 
         public virtual void GraduallyHeal(int amount, float duration)
         {
             GraduallyHealDuration = duration;
-            GraduallyHealAmountPerTick = amount / GraduallyHealDurationCounter;
+            _graduallyHealAmountPerTick = amount / _graduallyHealDurationCounter;
         }
 
         public virtual void Cleanse()
         {
-            foreach (var e in board.effects)
+            foreach (var e in Board.Effects)
             {
                 if (e is Stun or Effects.Sleep or Burn)
                 {
@@ -710,10 +711,10 @@ namespace TFT_Engine.Components
 
         public virtual void SetSleep(Character setter, float duration, double wakeupDamage)
         {
-            if (!ImmuneCC)
+            if (!ImmuneCc)
             {
-                Sleep sleep = new(duration,setter,this,wakeupDamage);
-                board.AddEffect(sleep);
+                Sleep sleep = new(duration, setter, this, wakeupDamage);
+                Board.AddEffect(sleep);
                 /*SleepSetter = setter;
                 SleepDuration = duration;
                 Sleep = true;
@@ -721,23 +722,23 @@ namespace TFT_Engine.Components
             }
         }
 
-        public virtual void SetBurn(Character setter, double duration, double burnDamage, DamageType burnType, float BonusIntakeDamage = 0)
+        public virtual void SetBurn(Character setter, double duration, double burnDamage, DamageType burnType, float bonusIntakeDamage = 0)
         {
             //Burn = true;
             Effect burn = new Burn(duration, burnType, burnDamage, setter, this);
-            board.AddEffect(burn);
+            Board.AddEffect(burn);
             /*BurnSetter = setter;
             burnDuration = duration;
             burnDamageEachSec = burnDamage / burnDurationCounter;
             burnDamageType = burnType;*/
-            BonusIntakeDamagePercentage *= 1 + BonusIntakeDamage;
+            BonusIntakeDamagePercentage *= 1 + bonusIntakeDamage;
         }
 
         public virtual void SetBurn(Set setter, double duration, double burnDamage, DamageType burnType,
-            float BonusIntakeDamage = 0)
+            float bonusIntakeDamage = 0)
         {
             Effect burn = new Burn(duration, burnType, burnDamage, setter, this);
-            board.AddEffect(burn);
+            Board.AddEffect(burn);
             /*Burn = true;
             burnSetterSet = setter;
             burnDuration = duration;
@@ -748,10 +749,10 @@ namespace TFT_Engine.Components
 
         public virtual void SetStun(Character setter, float duration)
         {
-            if (!ImmuneCC)
+            if (!ImmuneCc)
             {
                 Stun stun = new(duration, setter, this);
-                board.AddEffect(stun);
+                Board.AddEffect(stun);
                 /*Stun = true;
                 Stunner = setter;
                 StunDuration = duration;*/
@@ -760,10 +761,10 @@ namespace TFT_Engine.Components
 
         public virtual void SetStun(Set setter, float duration)
         {
-            if (!ImmuneCC)
+            if (!ImmuneCc)
             {
                 Stun stun = new(duration, setter, this);
-                board.AddEffect(stun);
+                Board.AddEffect(stun);
                 /*Stun = true;
                 stunnerSet = setter;
                 StunDuration = duration;*/
@@ -773,14 +774,14 @@ namespace TFT_Engine.Components
         public virtual void SetBlind(Character setter, float duration)
         {
             Blind = true;
-            BlindSetter = setter;
+            _blindSetter = setter;
             BlindDuration = duration;
         }
 
         public virtual void SetBlind(Set setter, float duration)
         {
             Blind = true;
-            blindSetterSet = setter;
+            _blindSetterSet = setter;
             BlindDuration = duration;
         }
 
@@ -788,7 +789,7 @@ namespace TFT_Engine.Components
         {
             Channeling = true;
             ChannelingDuration = duration;
-            this.channelTarget = channelTarget;
+            this.ChannelTarget = channelTarget;
         }
     }
 }

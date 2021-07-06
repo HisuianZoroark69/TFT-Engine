@@ -51,7 +51,7 @@ namespace TFT_Engine
                 });
 
             XmlSerializer xs = new(typeof(CharInfoWrapper));
-            CharInfoWrapper wrapper = new() {CharInfos = CharInfoTemp};
+            CharInfoWrapper wrapper = new() { CharInfos = CharInfoTemp };
             using var writer = new StringWriter();
             xs.Serialize(writer, wrapper);
             return writer.ToString();
@@ -63,12 +63,12 @@ namespace TFT_Engine
             foreach (var character in c)
                 StatInfoTemp.Add(new StatInfo
                 {
-                    CharacterHashCode = new Element<string> {value = character.GetHashCode().ToString()},
+                    CharacterHashCode = new Element<string> { value = character.GetHashCode().ToString() },
                     stats = character.currentStats
                 });
 
             XmlSerializer xs = new(typeof(StatInfoWrapper));
-            StatInfoWrapper wrapper = new() {StatInfos = StatInfoTemp};
+            StatInfoWrapper wrapper = new() { StatInfos = StatInfoTemp };
             using var writer = new StringWriter();
             xs.Serialize(writer, wrapper);
             return writer.ToString();

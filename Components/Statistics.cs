@@ -4,41 +4,41 @@
     {
         private double _attackSpeed;
         private double _hp;
-        public int atk;
-        public int attackRange;
-        public double attackSpeedCap = 5;
-        public int critRate;
-        public float decreasedHealing;
-        public int def;
-        public int dodgeRate;
+        public int Atk;
+        public int AttackRange;
+        public double AttackSpeedCap = 5;
+        public int CritRate;
+        public float DecreasedHealing;
+        public int Def;
+        public int DodgeRate;
 
         //These are for serialization only
-        public double mana;
-        public int maxHp;
-        public int maxMana;
-        public double movingSpeed = 0.75;
+        public double Mana;
+        public int MaxHp;
+        public int MaxMana;
+        public double MovingSpeed = 0.75;
 
-        public double shield;
-        public double specialAtkPercentage = 1;
-        public int specialDef;
+        public double Shield;
+        public double SpecialAtkPercentage = 1;
+        public int SpecialDef;
 
-        public double hp
+        public double Hp
         {
             get => _hp;
             set
             {
-                if (value - _hp > 0) value = (int) (value - (value - _hp) * decreasedHealing);
-                if (value > maxHp) _hp = maxHp;
+                if (value - _hp > 0) value = (int)(value - (value - _hp) * DecreasedHealing);
+                if (value > MaxHp) _hp = MaxHp;
                 else _hp = value;
             }
         }
 
-        public double attackSpeed
+        public double AttackSpeed
         {
             get => _attackSpeed;
             set
             {
-                if (value > attackSpeedCap) _attackSpeed = attackSpeedCap;
+                if (value > AttackSpeedCap) _attackSpeed = AttackSpeedCap;
                 else _attackSpeed = value;
             }
         }

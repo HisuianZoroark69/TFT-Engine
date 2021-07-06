@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
 using TFT_Engine.Components;
 
 namespace TFT_Engine
@@ -14,8 +8,8 @@ namespace TFT_Engine
     {
         public int DurationCounter { get; set; }
         public double BaseDuration;
-        public int maxStack; //maxStack = 0 <=> infinite stacks
-        public Board board;
+        public int MaxStack; //MaxStack = 0 <=> infinite stacks
+        public Board Board;
         public Character Effector;
         public Character Effected;
         public Set EffectorSet;
@@ -24,39 +18,39 @@ namespace TFT_Engine
 
         protected Effect(double duration, Character effector, Character effected, int stack = 0)
         {
-            maxStack = stack;
+            MaxStack = stack;
             BaseDuration = duration;
-            DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
+            DurationCounter = (int)(duration * effected.Board.DefaultTicksPerSec);
             Effector = effector;
             Effected = effected;
-            effected.board.AddRoundEvent(new RoundEvent(effected,EventType.Effects)
+            effected.Board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
             {
                 EffectName = GetType().Name,
-                linkedCharacters = new(){effector},
+                LinkedCharacters = new() { effector },
                 EffectValue = true
             });
         }
         protected Effect(double duration, Set effector, Character effected, int stack = 0)
         {
-            maxStack = stack;
+            MaxStack = stack;
             BaseDuration = duration;
-            DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
+            DurationCounter = (int)(duration * effected.Board.DefaultTicksPerSec);
             EffectorSet = effector;
             Effected = effected;
-            board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
+            Board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
             {
                 EffectName = GetType().Name,
-                linkedSet = effector,
+                LinkedSet = effector,
                 EffectValue = true
             });
         }
         protected Effect(double duration, Character effected, int stack = 0)
         {
-            maxStack = stack;
+            MaxStack = stack;
             BaseDuration = duration;
-            DurationCounter = (int)(duration * effected.board.defaultTicksPerSec);
+            DurationCounter = (int)(duration * effected.Board.DefaultTicksPerSec);
             Effected = effected;
-            effected.board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
+            effected.Board.AddRoundEvent(new RoundEvent(effected, EventType.Effects)
             {
                 EffectName = GetType().Name,
                 EffectValue = true
@@ -64,30 +58,30 @@ namespace TFT_Engine
         }
 
         //Board to get default tick
-        protected Effect(double duration, Character effector, Position pos, Board board, int stack = 0)
+        protected Effect(double duration, Character effector, Position pos, Board Board, int stack = 0)
         {
-            maxStack = stack;
+            MaxStack = stack;
             Effector = effector;
             BaseDuration = duration;
-            DurationCounter = (int)(duration * board.defaultTicksPerSec);
+            DurationCounter = (int)(duration * Board.DefaultTicksPerSec);
             EffectedPosition = pos;
-            board.AddRoundEvent(new RoundEvent(effector, pos)
+            Board.AddRoundEvent(new RoundEvent(effector, pos)
             {
-                linkedPositions = pos,
+                LinkedPositions = pos,
                 EffectName = GetType().Name,
                 EffectValue = true
             });
         }
-        protected Effect(double duration, Set effector, Position pos, Board board, int stack = 0)
+        protected Effect(double duration, Set effector, Position pos, Board Board, int stack = 0)
         {
-            maxStack = stack;
+            MaxStack = stack;
             EffectorSet = effector;
             BaseDuration = duration;
-            DurationCounter = (int)(duration * board.defaultTicksPerSec);
+            DurationCounter = (int)(duration * Board.DefaultTicksPerSec);
             EffectedPosition = pos;
-            board.AddRoundEvent(new RoundEvent(effector, pos)
+            Board.AddRoundEvent(new RoundEvent(effector, pos)
             {
-                linkedPositions = pos,
+                LinkedPositions = pos,
                 EffectName = GetType().Name,
                 EffectValue = true
             });
@@ -113,7 +107,7 @@ namespace TFT_Engine
 
         public void Refresh()
         {
-            DurationCounter = (int)(BaseDuration * board.defaultTicksPerSec);
+            DurationCounter = (int)(BaseDuration * Board.DefaultTicksPerSec);
         }
         public virtual void OverrideOnTick() { }
 
@@ -122,32 +116,32 @@ namespace TFT_Engine
             //Loop
             if (IsLoop)
             {
-                DurationCounter = (int)(board.defaultTicksPerSec * BaseDuration);
+                DurationCounter = (int)(Board.DefaultTicksPerSec * BaseDuration);
                 return;
             }
-            if(Effected != null)
-                board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
+            if (Effected != null)
+                Board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
                     EffectName = GetType().Name,
-                    linkedCharacters = new() { Effector },
+                    LinkedCharacters = new() { Effector },
                     EffectValue = false
                 });
-            else if(EffectorSet != null)
-                board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
+            else if (EffectorSet != null)
+                Board.AddRoundEvent(new RoundEvent(Effected, EventType.Effects)
                 {
                     EffectName = GetType().Name,
-                    linkedSet = EffectorSet,
+                    LinkedSet = EffectorSet,
                     EffectValue = false
                 });
             else
             {
-                board.AddRoundEvent(new RoundEvent(Effector ,EffectedPosition)
+                Board.AddRoundEvent(new RoundEvent(Effector, EffectedPosition)
                 {
                     EffectName = GetType().Name,
                     EffectValue = false
                 });
             }
-            
+
         }
     }
 }

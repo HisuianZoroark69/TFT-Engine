@@ -18,33 +18,33 @@ namespace TFT_Engine.Components
             this.creator = creator;
             routeCounter = 0;
             this.velocity = velocity;
-            route = creator.board.GetLineAhead(from, to, out ExtraAffectedPositions);
+            route = creator.Board.GetLineAhead(from, to, out ExtraAffectedPositions);
             currentPosition = from;
-            creator.board.TickEvent += OnTick;
+            creator.Board.TickEvent += OnTick;
         }
 
         public void Destroy()
         {
-            creator.board.TickEvent -= OnTick;
+            creator.Board.TickEvent -= OnTick;
         }
 
         public void OnTick()
         {
             if (velocityCounter == 0)
             {
-                velocityCounter = (int) velocity * creator.board.defaultTicksPerSec;
+                velocityCounter = (int)velocity * creator.Board.DefaultTicksPerSec;
                 if (routeCounter >= route.Count)
                 {
                     Destroy();
                     return;
                 }
                 currentPosition = route[routeCounter++];
-                
-                if (creator.board.Characters[currentPosition] != null)
-                    creator.OnProjectileHit(creator.board.Characters[currentPosition]);
+
+                if (creator.Board.Characters[currentPosition] != null)
+                    creator.OnProjectileHit(creator.Board.Characters[currentPosition]);
                 if (ExtraAffectedPositions.ContainsKey(currentPosition) &&
-                    creator.board.Characters[ExtraAffectedPositions[currentPosition]] != null)
-                    creator.OnProjectileHit(creator.board.Characters[ExtraAffectedPositions[currentPosition]]);
+                    creator.Board.Characters[ExtraAffectedPositions[currentPosition]] != null)
+                    creator.OnProjectileHit(creator.Board.Characters[ExtraAffectedPositions[currentPosition]]);
             }
             else
             {

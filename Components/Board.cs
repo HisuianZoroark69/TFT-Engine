@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
-using System.Threading;
 using Timer = System.Timers.Timer;
 
 namespace TFT_Engine.Components
@@ -30,36 +28,36 @@ namespace TFT_Engine.Components
         /// </summary>
         public enum BoardType
         {
-            RECTANGLE,
-            HEXAGON
+            Rectangle,
+            Hexagon
         }
 
-        private readonly bool border;
-        private readonly int height;
-        private readonly int[,] HexagonNeighbor = {{0, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, 0}, {-1, 1}};
+        private readonly bool _border;
+        private readonly int _height;
+        private readonly int[,] _hexagonNeighbor = { { 0, 1 }, { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, 0 }, { -1, 1 } };
 
         /// <summary>
         ///     Neighbor coordination
         /// </summary>
-        private readonly int[,] RectangleNeighbor =
+        private readonly int[,] _rectangleNeighbor =
             {{-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}};
 
-        private readonly BoardType Shape;
+        private readonly BoardType _shape;
 
         /// <summary>
         ///     The timer of the board
         /// </summary>
-        private readonly Timer timer = new() {AutoReset = true};
+        private readonly Timer _timer = new() { AutoReset = true };
 
         /// <summary>
         ///     Board dimensions
         /// </summary>
-        private readonly int width;
+        private readonly int _width;
 
         /// <summary>
         ///     Specify ticks per second
         /// </summary>
-        private float _TicksPerSecond;
+        private float _ticksPerSecond;
 
         /// <summary>
         ///     List of cells in the board
@@ -68,15 +66,22 @@ namespace TFT_Engine.Components
 
         public CharList Characters;
         public CharacterStartDelegate CharacterStart;
-        public Dictionary<Guid, int> charCounter;
+        public Dictionary<Guid, int> CharCounter;
 
         public int CurrentTick;
-        public int defaultTicksPerSec = 20;
-        public List<Position> positionList;
-        public RoundEventDictionary roundLog;
+        public int DefaultTicksPerSec = 20;
+        public List<Position> PositionList;
+        public RoundEventDictionary RoundLog;
 
-        public List<Set> sets;
-        public List<Effect> effects = new();
+        public List<Set> Sets;
+        public List<Effect> Effects = new();
+
+        /// <summary>
+        /// The size of the cell
+        /// </summary>
+        public int TileSize;
+
+        public int CharacterSize;
 
         /// <summary>
         ///     Initialize a new board
@@ -84,34 +89,37 @@ namespace TFT_Engine.Components
         /// <param name="type">The shape of the board</param>
         /// <param name="height">The height of the board</param>
         /// <param name="width">The width of the board</param>
-        public Board(BoardType type, int width, int height, bool border = true, params Set[] s)
+        public Board(BoardType type, int width, int height, int tileSize = 100, int characterSize = 60, bool border = true, params Set[] s)
         {
-            timer.Elapsed += (o, e) => TickEvent?.Invoke();
-            this.width = width;
-            this.height = height;
-            Shape = type;
-            this.border = border;
-            sets = new List<Set>(s);
-            foreach (var set in sets)
+            _timer.Elapsed += (o, e) => TickEvent?.Invoke();
+            this._width = width;
+            this._height = height;
+            _shape = type;
+            this._border = border;
+            Sets = new List<Set>(s);
+            foreach (var set in Sets)
             {
                 SetStartEvent += set.OnStart;
                 TickEvent += set.OnTick;
                 EndEvent += set.OnEnd;
-                set.board = this;
+                set.Board = this;
             }
 
-            positionList = getPositionList().ToList();
+
+            TileSize = tileSize;
+            CharacterSize = characterSize;
+            PositionList = GetPositionList().ToList();
         }
 
         public float TicksPerSecond
         {
-            get => _TicksPerSecond;
+            get => _ticksPerSecond;
             set
             {
-                _TicksPerSecond = value;
+                _ticksPerSecond = value;
                 try
                 {
-                    timer.Interval = 1000 / value; //min 10
+                    _timer.Interval = 1000 / value; //min 10
                     //timer.Enabled = true;
                 }
                 catch (Exception)
@@ -133,85 +141,85 @@ namespace TFT_Engine.Components
         /// </summary>
         public Guid Start(float tickPerSec = 20)
         {
-            effects.Clear();
+            Effects.Clear();
             Characters = new CharList(BaseCharacters);
-            charCounter = new Dictionary<Guid, int>();
+            CharCounter = new Dictionary<Guid, int>();
             foreach (var c in Characters)
                 try
                 {
-                    charCounter[c.teamID]++;
+                    CharCounter[c.TeamId]++;
                 }
                 catch (KeyNotFoundException)
                 {
-                    charCounter.Add(c.teamID, 0);
-                    charCounter[c.teamID]++;
+                    CharCounter.Add(c.TeamId, 0);
+                    CharCounter[c.TeamId]++;
                 }
-            foreach (var s in sets)
+            foreach (var s in Sets)
             {
                 //Reset type counter
-                s.characterWithType.Clear();
+                s.CharacterWithType.Clear();
 
                 //Add character to set
-                s.characterWithType = (from x in Characters
-                    where x.set.Contains(s)
-                    group x by x.teamID).ToDictionary(g => g.Key, g => g.ToList());
+                s.CharacterWithType = (from x in Characters
+                                       where x.Set.Contains(s)
+                                       group x by x.TeamId).ToDictionary(g => g.Key, g => g.ToList());
             }
 
-            if (charCounter.Keys.Count < 2) return charCounter.Keys.ToArray()[0];
+            if (CharCounter.Keys.Count < 2) return CharCounter.Keys.ToArray()[0];
             TicksPerSecond = tickPerSec; //Set default ticks
             CurrentTick = 0;
-            roundLog = new();
+            RoundLog = new();
             CharacterStart?.Invoke();
             SetStartEvent?.Invoke();
             StartEvent?.Invoke();
-            while ((from x in charCounter where x.Value == 0 select x).Count() < charCounter.Keys.Count - 1)
+            while ((from x in CharCounter where x.Value == 0 select x).Count() < CharCounter.Keys.Count - 1)
             {
                 CurrentTick++;
                 TickEvent?.Invoke();
-                foreach (Effect e in new List<Effect>(effects))
+                foreach (Effect e in new List<Effect>(Effects))
                 {
                     e.OnTick();
-                    if (e.DurationCounter == 0) 
-                        effects.Remove(e);
+                    if (e.DurationCounter == 0)
+                        Effects.Remove(e);
                 }
                 //Thread.Sleep((int) (TicksPerSecond > 0 ? 1000 / TicksPerSecond : 0));
             }
 
             //await Task.Run(() => { while (!charCounter.Values.Contains(0)){} });
-            timer.Stop();
+            _timer.Stop();
             EndEvent.Invoke();
-            return (from x in charCounter where x.Value != 0 select x.Key).ToList()[0];
+            return (from x in CharCounter where x.Value != 0 select x.Key).ToList()[0];
         }
 
         public bool CheckBoundary(Position pos)
         {
-            if (Shape == BoardType.HEXAGON &&
-                (pos.x > width - 1 - pos.z || pos.x < -pos.z / 2 || pos.z > 0 || pos.z < -height + 1)) return true;
-            if (Shape == BoardType.RECTANGLE &&
-                (pos.x < 0 || pos.x > width - 1 || pos.y < 0 || pos.y > height - 1)) return true;
+            if (_shape == BoardType.Hexagon &&
+                (pos.X > _width - 1 - pos.Z || pos.X < -pos.Z / 2 || pos.Z > 0 || pos.Z < -_height + 1)) return true;
+            if (_shape == BoardType.Rectangle &&
+                (pos.X < 0 || pos.X > _width - 1 || pos.Y < 0 || pos.Y > _height - 1)) return true;
 
             return false;
         }
 
         public void AddCharacter(Position pos, Character character)
         {
-            if (border && CheckBoundary(pos))
+            if (_border && CheckBoundary(pos))
             {
-                Console.WriteLine("There's already a character on this tile");
+                Console.WriteLine("Out side border");
                 return;
             }
 
-            if (!(from x in BaseCharacters where x.basePosition == pos select x).Any())
+            if (!(from x in BaseCharacters where x.BasePosition == pos select x).Any())
             {
-                character.board = this;
-                character.basePosition = pos;
+                character.Board = this;
+                character.BasePosition = pos;
                 BaseCharacters.Add(character);
                 TickEvent += character.OnTick;
                 CharacterStart += character.OnStart;
             }
             else
             {
-                BaseCharacters.Remove(BaseCharacters.Single(c => c.position == pos));
+                BaseCharacters.Remove(BaseCharacters.Single(c => c.Position == pos));
             }
         }
 
@@ -224,10 +232,10 @@ namespace TFT_Engine.Components
 
         public int Distance(Position pos1, Position pos2)
         {
-            if (Shape == BoardType.HEXAGON)
-                return (int) Math.Max(Math.Abs(pos1.x - pos2.x),
-                    Math.Max(Math.Abs(pos1.y - pos2.y), Math.Abs(pos1.z - pos2.z)));
-            if (Shape == BoardType.RECTANGLE) return (int) (Math.Abs(pos1.x - pos2.x) + Math.Abs(pos1.y - pos2.y));
+            if (_shape == BoardType.Hexagon)
+                return (int)Math.Max(Math.Abs(pos1.X - pos2.X),
+                    Math.Max(Math.Abs(pos1.Y - pos2.Y), Math.Abs(pos1.Z - pos2.Z)));
+            if (_shape == BoardType.Rectangle) return (int)(Math.Abs(pos1.X - pos2.X) + Math.Abs(pos1.Y - pos2.Y));
             return 0;
         }
 
@@ -236,9 +244,9 @@ namespace TFT_Engine.Components
             Dictionary<Position, Position> cameFrom = new();
             Dictionary<Position, int> costSoFar = new();
             List<(int, Position)> frontier = new();
-            int[,] Neighbor;
-            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
-            else Neighbor = RectangleNeighbor;
+            int[,] neighbor;
+            if (_shape == BoardType.Hexagon) neighbor = _hexagonNeighbor;
+            else neighbor = _rectangleNeighbor;
             frontier.Add((0, start));
             cameFrom.Add(start, start);
             costSoFar.Add(start, 0);
@@ -269,7 +277,7 @@ namespace TFT_Engine.Components
                 foreach (var next in GetAdjacentPositions(current))
                 {
                     //var next = new Position { x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1] };
-                    var t = from x in Characters where next == x.position && x.collision select x.position;
+                    var t = from x in Characters where next == x.Position && x.Collision select x.Position;
                     if (t.Any())
                     {
                         if (t.Contains(end))
@@ -311,15 +319,15 @@ namespace TFT_Engine.Components
 
         public List<Character> GetAdjacentCharacter(Character c)
         {
-            int[,] Neighbor;
-            var current = c.position;
-            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
-            else Neighbor = RectangleNeighbor;
+            int[,] neighbor;
+            var current = c.Position;
+            if (_shape == BoardType.Hexagon) neighbor = _hexagonNeighbor;
+            else neighbor = _rectangleNeighbor;
             List<Character> ret = new();
-            for (var i = 0; i < Neighbor.Length / 2; i++)
+            for (var i = 0; i < neighbor.Length / 2; i++)
             {
-                var next = new Position {x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1]};
-                ret.AddRange(from x in Characters where next == x.position select x);
+                var next = new Position { X = current.X + neighbor[i, 0], Y = current.Y + neighbor[i, 1] };
+                ret.AddRange(from x in Characters where next == x.Position select x);
             }
 
             return ret;
@@ -327,14 +335,14 @@ namespace TFT_Engine.Components
 
         public List<Character> GetAdjacentCharacter(Position current)
         {
-            int[,] Neighbor;
-            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
-            else Neighbor = RectangleNeighbor;
+            int[,] neighbor;
+            if (_shape == BoardType.Hexagon) neighbor = _hexagonNeighbor;
+            else neighbor = _rectangleNeighbor;
             List<Character> ret = new();
-            for (var i = 0; i < Neighbor.Length / 2; i++)
+            for (var i = 0; i < neighbor.Length / 2; i++)
             {
-                var next = new Position {x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1]};
-                if(Characters[next] != null) ret.Add(Characters[next]);
+                var next = new Position { X = current.X + neighbor[i, 0], Y = current.Y + neighbor[i, 1] };
+                if (Characters[next] != null) ret.Add(Characters[next]);
             }
 
             return ret;
@@ -342,20 +350,20 @@ namespace TFT_Engine.Components
 
         public List<Position> GetAdjacentPositions(Position current)
         {
-            int[,] Neighbor;
-            if (Shape == BoardType.HEXAGON) Neighbor = HexagonNeighbor;
-            else Neighbor = RectangleNeighbor;
+            int[,] neighbor;
+            if (_shape == BoardType.Hexagon) neighbor = _hexagonNeighbor;
+            else neighbor = _rectangleNeighbor;
             List<Position> ret = new();
-            for (var i = 0; i < Neighbor.Length / 2; i++)
+            for (var i = 0; i < neighbor.Length / 2; i++)
             {
-                var next = new Position {x = current.x + Neighbor[i, 0], y = current.y + Neighbor[i, 1]};
-                if (border)
-                    if (Shape == BoardType.HEXAGON &&
-                        (next.x > width - 1 - Math.Round(next.z / 2f, MidpointRounding.AwayFromZero) ||
-                         next.x < -next.z / 2 || next.z > 0 || next.z < -height + 1))
+                var next = new Position { X = current.X + neighbor[i, 0], Y = current.Y + neighbor[i, 1] };
+                if (_border)
+                    if (_shape == BoardType.Hexagon &&
+                        (next.X > _width - 1 - Math.Round(next.Z / 2f, MidpointRounding.AwayFromZero) ||
+                         next.X < -next.Z / 2 || next.Z > 0 || next.Z < -_height + 1))
                         continue;
-                    else if (Shape == BoardType.RECTANGLE &&
-                             (next.x < 0 || next.x > width - 1 || next.y < 0 || next.y > height - 1)) continue;
+                    else if (_shape == BoardType.Rectangle &&
+                             (next.X < 0 || next.X > _width - 1 || next.Y < 0 || next.Y > _height - 1)) continue;
                 ret.Add(next);
             }
 
@@ -366,14 +374,14 @@ namespace TFT_Engine.Components
             out Dictionary<Position, Position> affectedPositions)
         {
             HashSet<Position> ret = new();
-            float N = Distance(start, end);
-            start = start + new Position {x = 1e-6, y = 1e-6, z = 1e-6};
-            end = end + new Position {x = 1e-6, y = 1e-6, z = 1e-6};
+            float n = Distance(start, end);
+            start = start + new Position { X = 1e-6, Y = 1e-6, Z = 1e-6 };
+            end = end + new Position { X = 1e-6, Y = 1e-6, Z = 1e-6 };
             Position temp1;
-            for (var step = 0; step <= N; step++)
+            for (var step = 0; step <= n; step++)
             {
-                var t = N == 0 ? 0f : step / N;
-                temp1 = new Position {x = 0, z = 0};
+                var t = n == 0 ? 0f : step / n;
+                temp1 = new Position { X = 0, Z = 0 };
                 temp1 = LerpPoint(start, end, t);
                 temp1.Round();
                 ret.Add(temp1);
@@ -386,13 +394,13 @@ namespace TFT_Engine.Components
         public List<Position> DrawLine(Position start, Position end, bool extraAffectedPos = false)
         {
             HashSet<Position> ret = new();
-            float N = Distance(start, end);
-            start = start + new Position {x = 1e-6, y = 1e-6, z = 1e-6};
-            end = end + new Position {x = 1e-6, y = 1e-6, z = 1e-6};
-            for (var step = 0; step <= N; step++)
+            float n = Distance(start, end);
+            start = start + new Position { X = 1e-6, Y = 1e-6, Z = 1e-6 };
+            end = end + new Position { X = 1e-6, Y = 1e-6, Z = 1e-6 };
+            for (var step = 0; step <= n; step++)
             {
-                var t = N == 0 ? 0f : step / N;
-                Position temp1 = new() {x = 0, z = 0};
+                var t = n == 0 ? 0f : step / n;
+                Position temp1 = new() { X = 0, Z = 0 };
                 temp1 = LerpPoint(start, end, t);
                 temp1.Round();
                 ret.Add(temp1);
@@ -406,12 +414,12 @@ namespace TFT_Engine.Components
         {
             var baseLine = DrawLine(start, end);
             Dictionary<Position, Position> ret = new();
-            float N = Distance(start, end);
-            start -= new Position {x = 1e-6, y = 1e-6, z = 1e-6};
-            end -= new Position {x = 1e-6, y = 1e-6, z = 1e-6};
-            for (var step = 0; step <= N; step++)
+            float n = Distance(start, end);
+            start -= new Position { X = 1e-6, Y = 1e-6, Z = 1e-6 };
+            end -= new Position { X = 1e-6, Y = 1e-6, Z = 1e-6 };
+            for (var step = 0; step <= n; step++)
             {
-                var t = N == 0 ? 0f : step / N;
+                var t = n == 0 ? 0f : step / n;
                 Position temp1;
                 temp1 = LerpPoint(start, end, t);
                 temp1.Round();
@@ -425,8 +433,8 @@ namespace TFT_Engine.Components
         {
             return new()
             {
-                x = Lerp(p1.x, p2.x, t),
-                y = Lerp(p1.y, p2.y, t)
+                X = Lerp(p1.X, p2.X, t),
+                Y = Lerp(p1.Y, p2.Y, t)
             };
         }
 
@@ -485,40 +493,40 @@ namespace TFT_Engine.Components
             return ret.GetRange(1, length);
         }
 
-        private IEnumerable<Position> getPositionList()
+        private IEnumerable<Position> GetPositionList()
         {
-            if (Shape == BoardType.RECTANGLE)
-                for (var x = 0; x < width; x++)
-                for (var y = 0; y < height; y++)
-                    yield return new Position {x = x, y = y};
-            else if (Shape == BoardType.HEXAGON)
-                for (var z = 0; -z < height; z--)
-                for (var x = (int) Math.Round(-z / 2f, MidpointRounding.AwayFromZero); x < width; x++)
-                    yield return new Position {x = x, z = z};
+            if (_shape == BoardType.Rectangle)
+                for (var x = 0; x < _width; x++)
+                    for (var y = 0; y < _height; y++)
+                        yield return new Position { X = x, Y = y };
+            else if (_shape == BoardType.Hexagon)
+                for (var z = 0; -z < _height; z--)
+                    for (var x = (int)Math.Round(-z / 2f, MidpointRounding.AwayFromZero); x < _width; x++)
+                        yield return new Position { X = x, Z = z };
         }
 
         public List<Position> GetRange(Position current, int radius)
         {
             List<Position> ret = new();
             for (var x = -radius; x <= radius; x++)
-            for (var y = Math.Max(-radius, -x - radius); y <= Math.Min(radius, -x + radius); y++)
-                ret.Add(new Position {x = x, y = y});
+                for (var y = Math.Max(-radius, -x - radius); y <= Math.Min(radius, -x + radius); y++)
+                    ret.Add(new Position { X = x, Y = y });
             return ret;
         }
 
         public void AddRoundEvent(RoundEvent e)
         {
-            if (!roundLog.ContainsKey(CurrentTick))
-                roundLog[CurrentTick] = new List<RoundEvent> {e};
-            else roundLog[CurrentTick].Add(e);
+            if (!RoundLog.ContainsKey(CurrentTick))
+                RoundLog[CurrentTick] = new List<RoundEvent> { e };
+            else RoundLog[CurrentTick].Add(e);
         }
 
         public void AddEffect(Effect e)
         {
-            if (e.maxStack > 0 &&
-                (from x in effects where x.GetType() == e.GetType() select x).Count() > e.maxStack) return;
-            e.board = this;
-            effects.Add(e);
+            if (e.MaxStack > 0 &&
+                (from x in Effects where x.GetType() == e.GetType() select x).Count() > e.MaxStack) return;
+            e.Board = this;
+            Effects.Add(e);
         }
     }
 }
