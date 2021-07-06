@@ -5,6 +5,52 @@ using Timer = System.Timers.Timer;
 
 namespace TFT_Engine.Components
 {
+    class Node<T>
+    {
+        public T value;
+        public int priority;
+        public Node<T> PrevNode;
+        public Node<T> NextNode;
+    }
+    class PriorityQueue<T>
+    {
+        Node<T> head;
+        public Node<T> GetHead()
+        {
+            return head;
+        }
+        public void Add(T obj, int priority)
+        {
+            Node<T> ptr = head;
+            if (head == null)
+            {
+                head = new Node<T> { value = obj, priority = priority };
+                return;
+            }
+            do
+            {
+                if (ptr.priority > priority)
+                {
+                    var target = new Node<T> { value = obj, priority = priority};
+                    target.NextNode = ptr;
+                    ptr.PrevNode.NextNode = target;
+                    target.PrevNode = ptr.PrevNode;
+                }
+                ptr = ptr.NextNode;
+            } while (ptr != null);
+        }
+        public T Pop()
+        {
+            var tmp = head;
+            head = head.NextNode;
+            head.PrevNode = null;
+            return tmp.value;
+        }
+        public T Peek()
+        {
+            return head.value;
+        }
+    }
     public class Board
     {
         public delegate void CharacterStartDelegate();
