@@ -13,7 +13,7 @@ namespace TFT_Engine
         public Character Effector;
         public Character Effected;
         public Set EffectorSet;
-        public bool IsLoop;
+        public bool IsLoop = false;
         public Position EffectedPosition;
 
         protected Effect(double duration, Character effector, Character effected, int stack = 0)

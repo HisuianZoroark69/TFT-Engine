@@ -49,7 +49,7 @@ namespace TFT_Engine.Components
 
         private bool _channeling;
 
-        protected double mana;
+        protected double _mana;
         private double _oldMana;
 
 
@@ -169,17 +169,17 @@ namespace TFT_Engine.Components
 
         public double Mana
         {
-            get => _oldMana;
+            get => _mana;
             set
             {
                 if (!Channeling)
                 {
                     CurrentStats.Mana = value;
+                    _mana = value;
                     Board.AddRoundEvent(new RoundEvent(this, EventType.ManaChange)
                     {
                         Value = value - _oldMana
                     });
-                    _oldMana = value;
                     ManaChangeEvent?.Invoke(value - _oldMana);
                     _oldMana = value;
                 }
@@ -412,7 +412,7 @@ namespace TFT_Engine.Components
             }
 
             foreach (var i in Items) i.OnAttack(AttackTarget);
-            mana += 10;
+            Mana += 10;
         }
 
         public virtual double PhysicalDamageCalculation(Character attacker, double amount)
@@ -531,8 +531,8 @@ namespace TFT_Engine.Components
 
             //Adding intake damage mana
             if (damageType == DamageType.Physical && !isSpecial)
-                mana += attacker.CurrentStats.Atk / 100d + damage * 7d / 100d;
-            else mana += amount / 100d + damage * 7d / 100d;
+                Mana += attacker.CurrentStats.Atk / 100d + damage * 7d / 100d;
+            else Mana += amount / 100d + damage * 7d / 100d;
         }
 
         public virtual void OnHit(Set attacker, DamageType damageType, double amount, bool isSpecial = false,
@@ -608,14 +608,14 @@ namespace TFT_Engine.Components
             }
 
             //Adding intake damage mana
-            mana += amount / 100d + damage * 7d / 100d;
+            Mana += amount / 100d + damage * 7d / 100d;
         }
 
         public virtual void OnManaChange(double manaChange)
         {
-            if (mana >= CurrentStats.MaxMana && !Channeling && !(from x in Board.Effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any())
+            if (Mana >= CurrentStats.MaxMana && !Channeling && !(from x in Board.Effects where x.Effected == this && x is Effects.Sleep or Effects.Stun select x).Any())
             {
-                mana = 0;
+                Mana = 0;
                 CurrentStats.MaxMana = BaseStats.MaxMana; //Reset max mana if increased
                 BaseSpecialMove();
             }
